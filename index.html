@@ -7,6 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>FinanzasFlow — Tracker y Proyector de Inversiones</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <link rel="apple-touch-icon" href="logo.svg" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -16,9 +18,7 @@
       <div class="sidebar-top">
         <div class="brand">
           <div class="brand-logo" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+            <img src="logo.svg" alt="FinanzasFlow Logo" width="36" height="36" />
           </div>
           <div>
             <h1>FinanzasFlow</h1>
@@ -109,9 +109,12 @@
       <!-- ==================== TAB 1: TRACKER ==================== -->
       <main id="tab-tracker" class="tab-panel active">
         <header class="page-header">
-          <div>
-            <h2 class="ios-large-title">Tracker</h2>
-            <p class="page-sub">Ingresos, egresos y capacidad de ahorro por categoría.</p>
+          <div class="header-title-wrap">
+            <img src="logo.svg" alt="FinanzasFlow" class="mobile-brand-logo" width="34" height="34" />
+            <div>
+              <h2 class="ios-large-title">Tracker</h2>
+              <p class="page-sub">Ingresos, egresos y capacidad de ahorro por categoría.</p>
+            </div>
           </div>
           <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
