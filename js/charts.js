@@ -1,5 +1,6 @@
 /**
  * Gráficos ligeros en HTML5 Canvas sin dependencias externas (soporta HiDPI).
+ * Paleta optimizada para tema Minimalista Claro.
  */
 
 function setupCanvas(canvas, logicalW, logicalH) {
@@ -28,16 +29,16 @@ export function drawDonutChart(canvas, items, formatMoney) {
   const cx = w / 2;
   const cy = h / 2;
   const outerR = 84;
-  const innerR = 52;
+  const innerR = 54;
 
   if (total <= 0 || items.length === 0) {
     ctx.beginPath();
     ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
     ctx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
-    ctx.fillStyle = '#1e293b';
+    ctx.fillStyle = '#e2e8f0';
     ctx.fill();
 
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#64748b';
     ctx.font = '600 13px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -52,19 +53,19 @@ export function drawDonutChart(canvas, items, formatMoney) {
     ctx.arc(cx, cy, outerR, startAngle, startAngle + slice);
     ctx.arc(cx, cy, innerR, startAngle + slice, startAngle, true);
     ctx.closePath();
-    ctx.fillStyle = item.color || '#6366f1';
+    ctx.fillStyle = item.color || '#4f46e5';
     ctx.fill();
     startAngle += slice;
   });
 
   // Centro
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = '#64748b';
   ctx.font = '500 11px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('Total', cx, cy - 10);
 
-  ctx.fillStyle = '#eef2ff';
+  ctx.fillStyle = '#0f172a';
   ctx.font = '700 13px Inter, sans-serif';
   ctx.fillText(formatMoney(total), cx, cy + 9);
 }
@@ -79,7 +80,7 @@ export function drawMonthlyBarChart(canvas, monthsData) {
   const chartH = h - padT - padB;
 
   if (!monthsData || monthsData.length === 0) {
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#64748b';
     ctx.font = '500 13px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Sin historial mensual aún', w / 2, h / 2);
@@ -92,8 +93,8 @@ export function drawMonthlyBarChart(canvas, monthsData) {
   );
 
   // Líneas guía horizontales
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
-  ctx.fillStyle = '#94a3b8';
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
+  ctx.fillStyle = '#64748b';
   ctx.font = '500 10px Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -125,7 +126,7 @@ export function drawMonthlyBarChart(canvas, monthsData) {
     ctx.fillRect(cx + 2, padT + chartH - hEgr, barW, hEgr);
 
     // Etiqueta mes
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#64748b';
     ctx.font = '500 10.5px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -143,7 +144,7 @@ export function drawGrowthChart(canvas, series) {
   const chartH = h - padT - padB;
 
   if (!series || series.length < 2) {
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#64748b';
     ctx.font = '500 13px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Calcula una proyección para ver la curva', w / 2, h / 2);
@@ -154,8 +155,8 @@ export function drawGrowthChart(canvas, series) {
   const n = series.length;
 
   // Grid Y
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
-  ctx.fillStyle = '#94a3b8';
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
+  ctx.fillStyle = '#64748b';
   ctx.font = '500 11px Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -173,31 +174,31 @@ export function drawGrowthChart(canvas, series) {
   const xAt = (idx) => padL + (idx / (n - 1)) * chartW;
   const yAt = (val) => padT + chartH - (val / maxTotal) * chartH;
 
-  // Área 3 (Total = Inicial + Aportes + Rendimientos) -> Verde
+  // Área 3 (Total = Inicial + Aportes + Rendimientos) -> Verde bosque medio
   ctx.beginPath();
   ctx.moveTo(xAt(0), yAt(0));
   series.forEach((s, i) => ctx.lineTo(xAt(i), yAt(s.total)));
   ctx.lineTo(xAt(n - 1), yAt(0));
   ctx.closePath();
-  ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+  ctx.fillStyle = 'rgba(45, 106, 79, 0.24)';
   ctx.fill();
 
-  // Área 2 (Inicial + Aportes) -> Azul cielo
+  // Área 2 (Inicial + Aportes) -> Salvia suave
   ctx.beginPath();
   ctx.moveTo(xAt(0), yAt(0));
   series.forEach((s, i) => ctx.lineTo(xAt(i), yAt(s.initial + s.contributions)));
   ctx.lineTo(xAt(n - 1), yAt(0));
   ctx.closePath();
-  ctx.fillStyle = 'rgba(56, 189, 248, 0.38)';
+  ctx.fillStyle = 'rgba(64, 145, 108, 0.24)';
   ctx.fill();
 
-  // Área 1 (Capital Inicial) -> Índigo
+  // Área 1 (Capital Inicial) -> Verde bosque profundo
   ctx.beginPath();
   ctx.moveTo(xAt(0), yAt(0));
   series.forEach((s, i) => ctx.lineTo(xAt(i), yAt(s.initial)));
   ctx.lineTo(xAt(n - 1), yAt(0));
   ctx.closePath();
-  ctx.fillStyle = 'rgba(99, 102, 241, 0.45)';
+  ctx.fillStyle = 'rgba(27, 67, 50, 0.30)';
   ctx.fill();
 
   // Línea superior (Saldo total)
@@ -206,13 +207,13 @@ export function drawGrowthChart(canvas, series) {
     if (i === 0) ctx.moveTo(xAt(i), yAt(s.total));
     else ctx.lineTo(xAt(i), yAt(s.total));
   });
-  ctx.strokeStyle = '#10b981';
+  ctx.strokeStyle = '#1b4332';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
   // Etiquetas X (máximo 6 marcas)
   const ticks = Math.min(6, n);
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = '#64748b';
   ctx.font = '500 10.5px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -237,8 +238,8 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
   const n = series.length;
 
   // Grid Y
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
-  ctx.fillStyle = '#94a3b8';
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
+  ctx.fillStyle = '#64748b';
   ctx.font = '500 11px Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -266,7 +267,7 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
     ctx.lineTo(xAt(i), yAt(series[i].p10));
   }
   ctx.closePath();
-  ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+  ctx.fillStyle = 'rgba(64, 145, 108, 0.16)';
   ctx.fill();
 
   // Línea Renta Fija Benchmark (punteada ámbar)
@@ -277,18 +278,18 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
     if (i === 0) ctx.moveTo(xAt(i), yAt(s.rf));
     else ctx.lineTo(xAt(i), yAt(s.rf));
   });
-  ctx.strokeStyle = '#f59e0b';
+  ctx.strokeStyle = '#b45309';
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.restore();
 
-  // Línea P50 Mediana (verde sólida)
+  // Línea P50 Mediana (verde bosque sólida)
   ctx.beginPath();
   series.forEach((s, i) => {
     if (i === 0) ctx.moveTo(xAt(i), yAt(s.p50));
     else ctx.lineTo(xAt(i), yAt(s.p50));
   });
-  ctx.strokeStyle = '#10b981';
+  ctx.strokeStyle = '#1b4332';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
@@ -298,16 +299,16 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
     const my = yAt(mostProbableFinal);
     ctx.beginPath();
     ctx.arc(mx, my, 5.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#a855f7';
+    ctx.fillStyle = '#9333ea';
     ctx.fill();
-    ctx.strokeStyle = '#eef2ff';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
     ctx.stroke();
   }
 
   // Etiquetas X
   const ticks = Math.min(6, n);
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = '#64748b';
   ctx.font = '500 10.5px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';

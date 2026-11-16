@@ -8,676 +8,711 @@
 </head>
 <body>
   <div class="app-shell">
-    <!-- Header -->
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-logo" aria-hidden="true">₿</div>
-        <div>
-          <h1>FinanzasFlow</h1>
-          <p class="brand-sub">Control de ingresos, egresos y proyección de inversiones</p>
-        </div>
-      </div>
-
-      <nav class="main-tabs" role="tablist" aria-label="Secciones principales">
-        <button class="tab-btn active" data-tab="tracker" role="tab" aria-selected="true">
-          📊 Tracker Ingresos/Egresos
-        </button>
-        <button class="tab-btn" data-tab="proyector" role="tab" aria-selected="false">
-          📈 Proyector (Cajitas / CDT / Fondos)
-        </button>
-        <button class="tab-btn" data-tab="comparador" role="tab" aria-selected="false">
-          ⚖️ Portafolio &amp; Comparador
-        </button>
-        <button class="tab-btn" data-tab="predictor" role="tab" aria-selected="false">
-          🔮 Predictor Bursátil
-        </button>
-      </nav>
-
-      <div class="topbar-actions">
-        <select id="currencySelect" class="select-sm" title="Moneda de visualización" aria-label="Moneda">
-          <option value="COP">COP ($)</option>
-          <option value="USD">USD ($)</option>
-          <option value="MXN">MXN ($)</option>
-          <option value="EUR">EUR (€)</option>
-        </select>
-        <button id="btnLoadDemo" class="btn btn-ghost btn-sm" title="Cargar datos de ejemplo">
-          ✨ Demo
-        </button>
-        <button id="btnExportJson" class="btn btn-ghost btn-sm" title="Exportar respaldo JSON">
-          ⬇️ Exportar
-        </button>
-        <label class="btn btn-ghost btn-sm file-label" title="Importar respaldo JSON">
-          ⬆️ Importar
-          <input type="file" id="inputImportJson" accept="application/json" hidden />
-        </label>
-      </div>
-    </header>
-
-    <!-- ==================== TAB 1: TRACKER ==================== -->
-    <main id="tab-tracker" class="tab-panel active">
-      <!-- KPI Row -->
-      <section class="kpi-grid">
-        <article class="kpi-card">
-          <span class="kpi-label">Ingresos del período</span>
-          <strong class="kpi-value positive" id="kpiIngresos">$0</strong>
-          <span class="kpi-meta" id="kpiIngresosCount">0 movimientos</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Egresos del período</span>
-          <strong class="kpi-value negative" id="kpiEgresos">$0</strong>
-          <span class="kpi-meta" id="kpiEgresosCount">0 movimientos</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Balance Neto</span>
-          <strong class="kpi-value" id="kpiBalance">$0</strong>
-          <span class="kpi-meta" id="kpiBalanceSub">Disponible para ahorro/inversión</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Tasa de Ahorro</span>
-          <strong class="kpi-value accent" id="kpiTasaAhorro">0%</strong>
-          <span class="kpi-meta">Meta sugerida: ≥ 20%</span>
-        </article>
-      </section>
-
-      <div class="tracker-layout">
-        <!-- Left column: Form + Category Manager -->
-        <div class="stack">
-          <section class="card">
-            <div class="card-header">
-              <h2 id="formTxTitle">Registrar Movimiento</h2>
-              <button type="button" id="btnCancelEditTx" class="btn btn-ghost btn-xs hidden">Cancelar edición</button>
-            </div>
-            <form id="txForm" class="form-grid">
-              <input type="hidden" id="txId" />
-              <div class="type-toggle" role="group" aria-label="Tipo de movimiento">
-                <button type="button" class="type-btn active" data-type="egreso">Egreso</button>
-                <button type="button" class="type-btn" data-type="ingreso">Ingreso</button>
-              </div>
-
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Monto</span>
-                  <input type="number" id="txAmount" min="0.01" step="any" placeholder="Ej: 150000" required />
-                </label>
-                <label class="field">
-                  <span>Fecha</span>
-                  <input type="date" id="txDate" required />
-                </label>
-              </div>
-
-              <label class="field">
-                <span>Categoría</span>
-                <select id="txCategory" required></select>
-              </label>
-
-              <label class="field">
-                <span>Descripción / Nota</span>
-                <input type="text" id="txNote" maxlength="100" placeholder="Ej: Mercado semanal, Nómina, Cajita Nu..." />
-              </label>
-
-              <button type="submit" class="btn btn-primary" id="btnSaveTx">Guardar Movimiento</button>
-            </form>
-          </section>
-
-          <section class="card">
-            <div class="card-header">
-              <h2>Categorías</h2>
-              <button type="button" id="btnToggleCatForm" class="btn btn-ghost btn-xs">+ Nueva</button>
-            </div>
-
-            <form id="catForm" class="form-grid hidden" style="margin-bottom: 14px;">
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Nombre</span>
-                  <input type="text" id="catName" maxlength="28" placeholder="Ej: Suscripciones" required />
-                </label>
-                <label class="field">
-                  <span>Tipo</span>
-                  <select id="catType">
-                    <option value="egreso">Egreso</option>
-                    <option value="ingreso">Ingreso</option>
-                  </select>
-                </label>
-              </div>
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Ícono (emoji)</span>
-                  <input type="text" id="catIcon" maxlength="4" value="🏷️" />
-                </label>
-                <label class="field">
-                  <span>Color</span>
-                  <input type="color" id="catColor" value="#6366f1" />
-                </label>
-              </div>
-              <button type="submit" class="btn btn-secondary btn-sm">Agregar Categoría</button>
-            </form>
-
-            <div id="categoryChips" class="category-chips"></div>
-          </section>
-        </div>
-
-        <!-- Right column: Charts + History -->
-        <div class="stack">
-          <section class="card">
-            <div class="card-header wrap">
-              <h2>Resumen Visual</h2>
-              <div class="filters-inline">
-                <label class="field-inline">
-                  <span>Período:</span>
-                  <select id="filterMonth"></select>
-                </label>
-                <label class="field-inline">
-                  <span>Ver gráfico:</span>
-                  <select id="chartTypeFilter">
-                    <option value="egreso">Egresos por categoría</option>
-                    <option value="ingreso">Ingresos por categoría</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <div class="charts-pair">
-              <div class="chart-box">
-                <canvas id="donutChart" width="320" height="240"></canvas>
-                <div id="donutLegend" class="donut-legend"></div>
-              </div>
-              <div class="chart-box">
-                <h3 class="chart-subtitle">Flujo Mensual (Últimos 6 meses)</h3>
-                <canvas id="monthlyBarChart" width="420" height="230"></canvas>
-              </div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="card-header wrap">
-              <h2>Movimientos</h2>
-              <div class="filters-inline">
-                <input type="search" id="searchTx" class="input-sm" placeholder="Buscar nota..." />
-                <select id="filterTxType" class="select-sm">
-                  <option value="all">Todos</option>
-                  <option value="ingreso">Solo Ingresos</option>
-                  <option value="egreso">Solo Egresos</option>
-                </select>
-                <select id="filterTxCategory" class="select-sm">
-                  <option value="all">Todas las categorías</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Categoría</th>
-                    <th>Descripción</th>
-                    <th class="num">Monto</th>
-                    <th class="actions-col">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="txTableBody"></tbody>
-              </table>
-              <p id="txEmptyState" class="empty-state hidden">No hay movimientos para los filtros seleccionados.</p>
-            </div>
-          </section>
-        </div>
-      </div>
-    </main>
-
-    <!-- ==================== TAB 2: PROYECTOR ==================== -->
-    <main id="tab-proyector" class="tab-panel">
-      <div class="proyector-layout">
-        <!-- Left: Configuration -->
-        <section class="card">
-          <div class="card-header">
-            <h2>Configurar Proyección</h2>
-            <button type="button" id="btnUseTrackerSavings" class="btn btn-ghost btn-xs" title="Usar el balance positivo del tracker como aporte mensual">
-              💡 Usar ahorro del Tracker
-            </button>
+    <!-- Sidebar Lateral Fija -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="brand-logo" aria-hidden="true">F</div>
+          <div>
+            <h1>FinanzasFlow</h1>
+            <p class="brand-sub">Finanzas &amp; Proyección</p>
           </div>
+        </div>
 
-          <form id="projForm" class="form-grid">
-            <label class="field">
-              <span>Nombre del escenario / instrumento</span>
-              <input type="text" id="projName" value="Mi Cajita de Ahorro" maxlength="45" required />
-            </label>
+        <nav class="main-tabs" role="tablist" aria-label="Secciones principales">
+          <button class="tab-btn active" data-tab="tracker" role="tab" aria-selected="true">
+            <span class="nav-ico">📊</span>
+            <span>Ingresos y Egresos</span>
+          </button>
+          <button class="tab-btn" data-tab="proyector" role="tab" aria-selected="false">
+            <span class="nav-ico">📈</span>
+            <span>Proyector de Metas</span>
+          </button>
+          <button class="tab-btn" data-tab="comparador" role="tab" aria-selected="false">
+            <span class="nav-ico">⚖️</span>
+            <span>Portafolio &amp; Comparador</span>
+          </button>
+          <button class="tab-btn" data-tab="predictor" role="tab" aria-selected="false">
+            <span class="nav-ico">🔮</span>
+            <span>Predictor Bursátil</span>
+          </button>
+        </nav>
+      </div>
 
-            <label class="field">
-              <span>Tipo de instrumento</span>
-              <select id="projInstrument">
-                <option value="cajita">🪙 Cajita de Ahorro (Capitalización diaria)</option>
-                <option value="cdt">📜 CDT (Plazo fijo / Renovación)</option>
-                <option value="fondo">📊 Fondo de Inversión (FIC / ETF)</option>
-              </select>
-            </label>
+      <div class="sidebar-footer">
+        <label class="sidebar-field">
+          <span>Moneda</span>
+          <select id="currencySelect" aria-label="Moneda">
+            <option value="COP">COP ($)</option>
+            <option value="USD">USD ($)</option>
+            <option value="MXN">MXN ($)</option>
+            <option value="EUR">EUR (€)</option>
+          </select>
+        </label>
 
-            <div class="form-row-2">
-              <label class="field">
-                <span>Capital inicial</span>
-                <input type="number" id="projInitial" min="0" step="any" value="1000000" required />
-              </label>
-              <label class="field">
-                <span>Tasa Efectiva Anual (% E.A.)</span>
-                <input type="number" id="projRate" min="0" max="200" step="0.01" value="11.00" required />
-              </label>
-            </div>
+        <div class="sidebar-btns">
+          <button id="btnLoadDemo" class="btn btn-ghost btn-sm" title="Cargar datos de ejemplo">
+            ✨ Demo
+          </button>
+          <button id="btnExportJson" class="btn btn-ghost btn-sm" title="Exportar respaldo JSON">
+            ⬇️ Exportar
+          </button>
+          <label class="btn btn-ghost btn-sm file-label" title="Importar respaldo JSON">
+            ⬆️ Importar
+            <input type="file" id="inputImportJson" accept="application/json" hidden />
+          </label>
+        </div>
+      </div>
+    </aside>
 
-            <div class="form-row-2">
-              <label class="field">
-                <span>Aporte periódico</span>
-                <input type="number" id="projContribution" min="0" step="any" value="200000" required />
-              </label>
-              <label class="field">
-                <span>Frecuencia de aporte</span>
-                <select id="projFrequency">
-                  <option value="mensual" selected>Mensual (12/año)</option>
-                  <option value="semanal">Semanal (52/año)</option>
-                  <option value="diario">Diario (365/año)</option>
-                  <option value="ninguno">Sin aportes</option>
-                </select>
-              </label>
-            </div>
+    <!-- Área Principal -->
+    <div class="main-area">
+      <!-- ==================== TAB 1: TRACKER ==================== -->
+      <main id="tab-tracker" class="tab-panel active">
+        <header class="page-header">
+          <div>
+            <h2>Tracker de Ingresos y Egresos</h2>
+            <p class="page-sub">Registra tus movimientos por categoría y monitorea tu capacidad de ahorro.</p>
+          </div>
+        </header>
 
-            <div class="form-row-2">
-              <label class="field">
-                <span>Horizonte</span>
-                <input type="number" id="projHorizonVal" min="1" max="600" value="12" required />
-              </label>
-              <label class="field">
-                <span>Unidad de tiempo</span>
-                <select id="projHorizonUnit">
-                  <option value="meses" selected>Meses</option>
-                  <option value="dias">Días</option>
-                  <option value="anios">Años</option>
-                </select>
-              </label>
-            </div>
-
-            <!-- Instrument-specific options -->
-            <div id="cdtOptions" class="sub-panel hidden">
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Plazo del CDT (días)</span>
-                  <input type="number" id="projCdtTermDays" min="30" max="1800" value="180" />
-                </label>
-                <label class="field">
-                  <span>Retención en la fuente (%)</span>
-                  <input type="number" id="projTaxRate" min="0" max="50" step="0.1" value="4.0" />
-                </label>
-              </div>
-              <label class="checkbox-field">
-                <input type="checkbox" id="projCdtReinvest" checked />
-                <span>Renovar automáticamente al vencimiento (reinvertir capital + rendimientos netos)</span>
-              </label>
-              <p class="hint">En CDTs sin renovación, los aportes periódicos se acumulan para la siguiente apertura o se muestran al vencimiento.</p>
-            </div>
-
-            <div id="fondoOptions" class="sub-panel hidden">
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Comisión administración (% anual)</span>
-                  <input type="number" id="projFeeRate" min="0" max="15" step="0.05" value="1.20" />
-                </label>
-                <label class="field">
-                  <span>Retención / Impuesto (%)</span>
-                  <input type="number" id="projFondoTax" min="0" max="50" step="0.1" value="0" />
-                </label>
-              </div>
-              <p class="hint">La comisión anual se descuenta diariamente de la rentabilidad esperada.</p>
-
-              <div id="fondoViabilityBox" class="viability-box">
-                <div class="viability-header">
-                  <strong>🔮 Viabilidad Bursátil para Fondos</strong>
-                  <span class="badge" id="fondoViabilityBadge">62/100 · Moderado</span>
-                </div>
-                <p class="hint" id="fondoViabilityAdvice">Evaluando condiciones del mercado...</p>
-                <div class="viability-stats">
-                  <span>Más probable (Moda): <strong id="fondoModeVal">$0</strong></span>
-                  <span>Tasa sugerida: <strong id="fondoSuggestedRate">12.5% E.A.</strong></span>
-                </div>
-                <div class="btn-row" style="margin-top: 6px;">
-                  <button type="button" id="btnApplySuggestedRate" class="btn btn-secondary btn-xs">✨ Aplicar tasa sugerida</button>
-                  <button type="button" id="btnOpenPredictor" class="btn btn-ghost btn-xs">Ajustar en Predictor 🔮</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <label class="field">
-                <span>Inflación anual estimada (%)</span>
-                <input type="number" id="projInflation" min="0" max="100" step="0.1" value="5.0" />
-              </label>
-              <label class="field">
-                <span>Incremento anual de aportes (%)</span>
-                <input type="number" id="projContribGrowth" min="0" max="50" step="0.5" value="0" />
-              </label>
-            </div>
-
-            <div class="btn-row">
-              <button type="submit" class="btn btn-primary">Calcular Proyección</button>
-              <button type="button" id="btnSaveScenario" class="btn btn-secondary">💾 Guardar en Portafolio</button>
-            </div>
-          </form>
+        <section class="kpi-grid">
+          <article class="kpi-card">
+            <span class="kpi-label">Ingresos del período</span>
+            <strong class="kpi-value positive" id="kpiIngresos">$0</strong>
+            <span class="kpi-meta" id="kpiIngresosCount">0 movimientos</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Egresos del período</span>
+            <strong class="kpi-value negative" id="kpiEgresos">$0</strong>
+            <span class="kpi-meta" id="kpiEgresosCount">0 movimientos</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Balance Neto</span>
+            <strong class="kpi-value" id="kpiBalance">$0</strong>
+            <span class="kpi-meta" id="kpiBalanceSub">Disponible para ahorro/inversión</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Tasa de Ahorro</span>
+            <strong class="kpi-value accent" id="kpiTasaAhorro">0%</strong>
+            <span class="kpi-meta">Meta sugerida: ≥ 20%</span>
+          </article>
         </section>
 
-        <!-- Right: Results & Chart -->
-        <div class="stack">
-          <section class="kpi-grid">
-            <article class="kpi-card">
-              <span class="kpi-label">Capital Final Proyectado</span>
-              <strong class="kpi-value positive" id="projFinalValue">$0</strong>
-              <span class="kpi-meta" id="projRealValue">Valor real (sin inflación): $0</span>
-            </article>
-            <article class="kpi-card">
-              <span class="kpi-label">Total Aportado</span>
-              <strong class="kpi-value" id="projTotalInvested">$0</strong>
-              <span class="kpi-meta" id="projInitialVsContrib">Inicial + aportes</span>
-            </article>
-            <article class="kpi-card">
-              <span class="kpi-label">Rendimientos Netos</span>
-              <strong class="kpi-value accent" id="projNetInterest">$0</strong>
-              <span class="kpi-meta" id="projMultiplier">Multiplicador: 1.00x</span>
-            </article>
-            <article class="kpi-card">
-              <span class="kpi-label">Renta Mensual Promedio</span>
-              <strong class="kpi-value" id="projMonthlyPassive">$0</strong>
-              <span class="kpi-meta" id="projTaxPaid">Impuestos/comisiones: $0</span>
-            </article>
-          </section>
-
-          <section class="card">
-            <div class="card-header wrap">
-              <h2>Curva de Crecimiento</h2>
-              <div class="legend-pills">
-                <span class="pill"><i class="dot dot-initial"></i> Capital Inicial</span>
-                <span class="pill"><i class="dot dot-contrib"></i> Aportes</span>
-                <span class="pill"><i class="dot dot-interest"></i> Rendimientos</span>
+        <div class="tracker-layout">
+          <div class="stack">
+            <section class="card">
+              <div class="card-header">
+                <h3 id="formTxTitle">Registrar Movimiento</h3>
+                <button type="button" id="btnCancelEditTx" class="btn btn-ghost btn-xs hidden">Cancelar edición</button>
               </div>
-            </div>
-            <div class="growth-chart-wrap">
-              <canvas id="growthChart" width="760" height="300"></canvas>
-            </div>
-          </section>
+              <form id="txForm" class="form-grid">
+                <input type="hidden" id="txId" />
+                <div class="type-toggle" role="group" aria-label="Tipo de movimiento">
+                  <button type="button" class="type-btn active" data-type="egreso">Egreso</button>
+                  <button type="button" class="type-btn" data-type="ingreso">Ingreso</button>
+                </div>
 
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Monto</span>
+                    <input type="number" id="txAmount" min="0.01" step="any" placeholder="Ej: 150000" required />
+                  </label>
+                  <label class="field">
+                    <span>Fecha</span>
+                    <input type="date" id="txDate" required />
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>Categoría</span>
+                  <select id="txCategory" required></select>
+                </label>
+
+                <label class="field">
+                  <span>Descripción / Nota</span>
+                  <input type="text" id="txNote" maxlength="100" placeholder="Ej: Mercado semanal, Nómina, Cajita Nu..." />
+                </label>
+
+                <button type="submit" class="btn btn-primary" id="btnSaveTx">Guardar Movimiento</button>
+              </form>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <h3>Categorías</h3>
+                <button type="button" id="btnToggleCatForm" class="btn btn-ghost btn-xs">+ Nueva</button>
+              </div>
+
+              <form id="catForm" class="form-grid hidden" style="margin-bottom: 14px;">
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Nombre</span>
+                    <input type="text" id="catName" maxlength="28" placeholder="Ej: Suscripciones" required />
+                  </label>
+                  <label class="field">
+                    <span>Tipo</span>
+                    <select id="catType">
+                      <option value="egreso">Egreso</option>
+                      <option value="ingreso">Ingreso</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Ícono (emoji)</span>
+                    <input type="text" id="catIcon" maxlength="4" value="🏷️" />
+                  </label>
+                  <label class="field">
+                    <span>Color</span>
+                    <input type="color" id="catColor" value="#4f46e5" />
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-secondary btn-sm">Agregar Categoría</button>
+              </form>
+
+              <div id="categoryChips" class="category-chips"></div>
+            </section>
+          </div>
+
+          <div class="stack">
+            <section class="card">
+              <div class="card-header wrap">
+                <h3>Resumen Visual</h3>
+                <div class="filters-inline">
+                  <label class="field-inline">
+                    <span>Período:</span>
+                    <select id="filterMonth"></select>
+                  </label>
+                  <label class="field-inline">
+                    <span>Ver gráfico:</span>
+                    <select id="chartTypeFilter">
+                      <option value="egreso">Egresos por categoría</option>
+                      <option value="ingreso">Ingresos por categoría</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="charts-pair">
+                <div class="chart-box">
+                  <canvas id="donutChart" width="320" height="240"></canvas>
+                  <div id="donutLegend" class="donut-legend"></div>
+                </div>
+                <div class="chart-box">
+                  <h4 class="chart-subtitle">Flujo Mensual (Últimos 6 meses)</h4>
+                  <canvas id="monthlyBarChart" width="420" height="230"></canvas>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-header wrap">
+                <h3>Movimientos</h3>
+                <div class="filters-inline">
+                  <input type="search" id="searchTx" class="input-sm" placeholder="Buscar nota..." />
+                  <select id="filterTxType" class="select-sm">
+                    <option value="all">Todos</option>
+                    <option value="ingreso">Solo Ingresos</option>
+                    <option value="egreso">Solo Egresos</option>
+                  </select>
+                  <select id="filterTxCategory" class="select-sm">
+                    <option value="all">Todas las categorías</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Categoría</th>
+                      <th>Descripción</th>
+                      <th class="num">Monto</th>
+                      <th class="actions-col">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="txTableBody"></tbody>
+                </table>
+                <p id="txEmptyState" class="empty-state hidden">No hay movimientos para los filtros seleccionados.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==================== TAB 2: PROYECTOR ==================== -->
+      <main id="tab-proyector" class="tab-panel">
+        <header class="page-header">
+          <div>
+            <h2>Proyector de Crecimiento</h2>
+            <p class="page-sub">Simula Cajitas de ahorro, CDTs y Fondos de Inversión con aportes diarios, semanales o mensuales.</p>
+          </div>
+        </header>
+
+        <div class="proyector-layout">
           <section class="card">
-            <div class="card-header wrap">
-              <h2>Tabla de Evolución</h2>
-              <select id="projTableGranularity" class="select-sm">
-                <option value="mensual">Vista Mensual</option>
-                <option value="anual">Vista Anual</option>
-              </select>
+            <div class="card-header">
+              <h3>Configurar Proyección</h3>
+              <button type="button" id="btnUseTrackerSavings" class="btn btn-ghost btn-xs" title="Usar el balance positivo del tracker como aporte mensual">
+                💡 Usar ahorro del Tracker
+              </button>
             </div>
-            <div class="table-wrap max-h">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Período</th>
-                    <th class="num">Saldo Inicial</th>
-                    <th class="num">Aportes</th>
-                    <th class="num">Rendimientos</th>
-                    <th class="num">Saldo Final</th>
-                  </tr>
-                </thead>
-                <tbody id="projTableBody"></tbody>
-              </table>
-            </div>
+
+            <form id="projForm" class="form-grid">
+              <label class="field">
+                <span>Nombre del escenario / instrumento</span>
+                <input type="text" id="projName" value="Mi Cajita de Ahorro" maxlength="45" required />
+              </label>
+
+              <label class="field">
+                <span>Tipo de instrumento</span>
+                <select id="projInstrument">
+                  <option value="cajita">🪙 Cajita de Ahorro (Capitalización diaria)</option>
+                  <option value="cdt">📜 CDT (Plazo fijo / Renovación)</option>
+                  <option value="fondo">📊 Fondo de Inversión (FIC / ETF)</option>
+                </select>
+              </label>
+
+              <div class="form-row-2">
+                <label class="field">
+                  <span>Capital inicial</span>
+                  <input type="number" id="projInitial" min="0" step="any" value="1000000" required />
+                </label>
+                <label class="field">
+                  <span>Tasa Efectiva Anual (% E.A.)</span>
+                  <input type="number" id="projRate" min="0" max="200" step="0.01" value="11.00" required />
+                </label>
+              </div>
+
+              <div class="form-row-2">
+                <label class="field">
+                  <span>Aporte periódico</span>
+                  <input type="number" id="projContribution" min="0" step="any" value="200000" required />
+                </label>
+                <label class="field">
+                  <span>Frecuencia de aporte</span>
+                  <select id="projFrequency">
+                    <option value="mensual" selected>Mensual (12/año)</option>
+                    <option value="semanal">Semanal (52/año)</option>
+                    <option value="diario">Diario (365/año)</option>
+                    <option value="ninguno">Sin aportes</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-row-2">
+                <label class="field">
+                  <span>Horizonte</span>
+                  <input type="number" id="projHorizonVal" min="1" max="600" value="12" required />
+                </label>
+                <label class="field">
+                  <span>Unidad de tiempo</span>
+                  <select id="projHorizonUnit">
+                    <option value="meses" selected>Meses</option>
+                    <option value="dias">Días</option>
+                    <option value="anios">Años</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="cdtOptions" class="sub-panel hidden">
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Plazo del CDT (días)</span>
+                    <input type="number" id="projCdtTermDays" min="30" max="1800" value="180" />
+                  </label>
+                  <label class="field">
+                    <span>Retención en la fuente (%)</span>
+                    <input type="number" id="projTaxRate" min="0" max="50" step="0.1" value="4.0" />
+                  </label>
+                </div>
+                <label class="checkbox-field">
+                  <input type="checkbox" id="projCdtReinvest" checked />
+                  <span>Renovar automáticamente al vencimiento (reinvertir capital + rendimientos netos)</span>
+                </label>
+                <p class="hint">En CDTs sin renovación, los aportes periódicos se acumulan para la siguiente apertura o se muestran al vencimiento.</p>
+              </div>
+
+              <div id="fondoOptions" class="sub-panel hidden">
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Comisión administración (% anual)</span>
+                    <input type="number" id="projFeeRate" min="0" max="15" step="0.05" value="1.20" />
+                  </label>
+                  <label class="field">
+                    <span>Retención / Impuesto (%)</span>
+                    <input type="number" id="projFondoTax" min="0" max="50" step="0.1" value="0" />
+                  </label>
+                </div>
+                <p class="hint">La comisión anual se descuenta diariamente de la rentabilidad esperada.</p>
+
+                <div id="fondoViabilityBox" class="viability-box">
+                  <div class="viability-header">
+                    <strong>🔮 Viabilidad Bursátil para Fondos</strong>
+                    <span class="badge" id="fondoViabilityBadge">62/100 · Moderado</span>
+                  </div>
+                  <p class="hint" id="fondoViabilityAdvice">Evaluando condiciones del mercado...</p>
+                  <div class="viability-stats">
+                    <span>Más probable (Moda): <strong id="fondoModeVal">$0</strong></span>
+                    <span>Tasa sugerida: <strong id="fondoSuggestedRate">12.5% E.A.</strong></span>
+                  </div>
+                  <div class="btn-row" style="margin-top: 6px;">
+                    <button type="button" id="btnApplySuggestedRate" class="btn btn-secondary btn-xs">✨ Aplicar tasa sugerida</button>
+                    <button type="button" id="btnOpenPredictor" class="btn btn-ghost btn-xs">Ajustar en Predictor 🔮</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <label class="field">
+                  <span>Inflación anual estimada (%)</span>
+                  <input type="number" id="projInflation" min="0" max="100" step="0.1" value="5.0" />
+                </label>
+                <label class="field">
+                  <span>Incremento anual de aportes (%)</span>
+                  <input type="number" id="projContribGrowth" min="0" max="50" step="0.5" value="0" />
+                </label>
+              </div>
+
+              <div class="btn-row">
+                <button type="submit" class="btn btn-primary">Calcular Proyección</button>
+                <button type="button" id="btnSaveScenario" class="btn btn-secondary">💾 Guardar en Portafolio</button>
+              </div>
+            </form>
           </section>
-        </div>
-      </div>
-    </main>
 
-    <!-- ==================== TAB 3: COMPARADOR ==================== -->
-    <main id="tab-comparador" class="tab-panel">
-      <section class="kpi-grid" style="margin-bottom: 18px;">
-        <article class="kpi-card">
-          <span class="kpi-label">Escenarios Guardados</span>
-          <strong class="kpi-value" id="compCount">0</strong>
-          <span class="kpi-meta">Cajitas, CDTs y Fondos</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Total Invertido (Portafolio)</span>
-          <strong class="kpi-value" id="compTotalInvested">$0</strong>
-          <span class="kpi-meta">Suma de capital + aportes</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Valor Futuro Combinado</span>
-          <strong class="kpi-value positive" id="compTotalFinal">$0</strong>
-          <span class="kpi-meta">Al horizonte de cada meta</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-label">Rendimientos Totales</span>
-          <strong class="kpi-value accent" id="compTotalInterest">$0</strong>
-          <span class="kpi-meta">Ganancia neta proyectada</span>
-        </article>
-      </section>
+          <div class="stack">
+            <section class="kpi-grid">
+              <article class="kpi-card">
+                <span class="kpi-label">Capital Final Proyectado</span>
+                <strong class="kpi-value positive" id="projFinalValue">$0</strong>
+                <span class="kpi-meta" id="projRealValue">Valor real (sin inflación): $0</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Total Aportado</span>
+                <strong class="kpi-value" id="projTotalInvested">$0</strong>
+                <span class="kpi-meta" id="projInitialVsContrib">Inicial + aportes</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Rendimientos Netos</span>
+                <strong class="kpi-value accent" id="projNetInterest">$0</strong>
+                <span class="kpi-meta" id="projMultiplier">Multiplicador: 1.00x</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Renta Mensual Promedio</span>
+                <strong class="kpi-value" id="projMonthlyPassive">$0</strong>
+                <span class="kpi-meta" id="projTaxPaid">Impuestos/comisiones: $0</span>
+              </article>
+            </section>
 
-      <section class="card">
-        <div class="card-header wrap">
-          <h2>Comparador de Instrumentos Guardados</h2>
-          <button type="button" id="btnAddDefaultComparison" class="btn btn-ghost btn-sm">
-            ✨ Cargar comparativa ejemplo (Cajita vs CDT vs Fondo)
-          </button>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Instrumento</th>
-                <th class="num">Tasa E.A.</th>
-                <th>Aporte</th>
-                <th>Horizonte</th>
-                <th class="num">Invertido</th>
-                <th class="num">Rendimiento Neto</th>
-                <th class="num">Saldo Final</th>
-                <th class="actions-col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="compTableBody"></tbody>
-          </table>
-          <p id="compEmptyState" class="empty-state hidden">
-            Aún no has guardado escenarios. Configura uno en la pestaña "Proyector" y haz clic en "Guardar en Portafolio".
-          </p>
-        </div>
-      </section>
-    </main>
+            <section class="card">
+              <div class="card-header wrap">
+                <h3>Curva de Crecimiento</h3>
+                <div class="legend-pills">
+                  <span class="pill"><i class="dot dot-initial"></i> Capital Inicial</span>
+                  <span class="pill"><i class="dot dot-contrib"></i> Aportes</span>
+                  <span class="pill"><i class="dot dot-interest"></i> Rendimientos</span>
+                </div>
+              </div>
+              <div class="growth-chart-wrap">
+                <canvas id="growthChart" width="760" height="300"></canvas>
+              </div>
+            </section>
 
-    <!-- ==================== TAB 4: PREDICTOR BURSÁTIL ==================== -->
-    <main id="tab-predictor" class="tab-panel">
-      <div class="proyector-layout">
-        <!-- Left: Market Viability & Simulation Inputs -->
+            <section class="card">
+              <div class="card-header wrap">
+                <h3>Tabla de Evolución</h3>
+                <select id="projTableGranularity" class="select-sm">
+                  <option value="mensual">Vista Mensual</option>
+                  <option value="anual">Vista Anual</option>
+                </select>
+              </div>
+              <div class="table-wrap max-h">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Período</th>
+                      <th class="num">Saldo Inicial</th>
+                      <th class="num">Aportes</th>
+                      <th class="num">Rendimientos</th>
+                      <th class="num">Saldo Final</th>
+                    </tr>
+                  </thead>
+                  <tbody id="projTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==================== TAB 3: COMPARADOR ==================== -->
+      <main id="tab-comparador" class="tab-panel">
+        <header class="page-header">
+          <div>
+            <h2>Portafolio &amp; Comparador</h2>
+            <p class="page-sub">Compara múltiples Cajitas, CDTs y Fondos guardados y revisa su valor futuro combinado.</p>
+          </div>
+        </header>
+
+        <section class="kpi-grid" style="margin-bottom: 18px;">
+          <article class="kpi-card">
+            <span class="kpi-label">Escenarios Guardados</span>
+            <strong class="kpi-value" id="compCount">0</strong>
+            <span class="kpi-meta">Cajitas, CDTs y Fondos</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Total Invertido (Portafolio)</span>
+            <strong class="kpi-value" id="compTotalInvested">$0</strong>
+            <span class="kpi-meta">Suma de capital + aportes</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Valor Futuro Combinado</span>
+            <strong class="kpi-value positive" id="compTotalFinal">$0</strong>
+            <span class="kpi-meta">Al horizonte de cada meta</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Rendimientos Totales</span>
+            <strong class="kpi-value accent" id="compTotalInterest">$0</strong>
+            <span class="kpi-meta">Ganancia neta proyectada</span>
+          </article>
+        </section>
+
         <section class="card">
           <div class="card-header wrap">
-            <h2>Viabilidad del Mercado Bursátil</h2>
-            <select id="mktPreset" class="select-sm" title="Escenario macroeconómico">
-              <option value="custom">Personalizado</option>
-              <option value="bull">🟢 Mercado Alcista (Bull)</option>
-              <option value="neutral" selected>🟡 Mercado Neutral / Mixto</option>
-              <option value="bear">🔴 Mercado Bajista (Bear)</option>
-              <option value="crisis">⚡ Alta Volatilidad / Crisis</option>
-            </select>
+            <h3>Comparador de Instrumentos Guardados</h3>
+            <button type="button" id="btnAddDefaultComparison" class="btn btn-ghost btn-sm">
+              ✨ Cargar comparativa ejemplo (Cajita vs CDT vs Fondo)
+            </button>
           </div>
-
-          <form id="mktForm" class="form-grid">
-            <div class="sub-panel">
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-                <span class="sub-panel-title">Activo / Mercado a Evaluar</span>
-                <button type="button" id="btnSyncBvc" class="btn btn-ghost btn-xs" title="Consultar datos reales vía server.py">
-                  🔄 Sincronizar Activo
-                </button>
-              </div>
-              <label class="field">
-                <span>Acción BVC, ETF o Fondo</span>
-                <select id="mktAssetSelect">
-                  <optgroup label="Mercado General BVC">
-                    <option value="ICOLCAP.CL" selected>📊 MSCI COLCAP — Mercado General BVC</option>
-                    <option value="GXG">🇨🇴 Global X MSCI Colombia ETF (GXG)</option>
-                  </optgroup>
-                  <optgroup label="Acciones BVC">
-                    <option value="ECOPETROL.CL">🛢️ Ecopetrol (ECOPETROL.CL / EC)</option>
-                    <option value="PFBCOLOM.CL">🏦 Bancolombia Pref. (PFBCOLOM.CL / CIB)</option>
-                    <option value="ISA.CL">⚡ ISA Interconexión Eléctrica (ISA.CL)</option>
-                    <option value="GEB.CL">🔌 Grupo Energía Bogotá (GEB.CL)</option>
-                    <option value="GRUPOSURA.CL">🏛️ Grupo Sura (GRUPOSURA.CL)</option>
-                    <option value="CEMARGOS.CL">🧱 Cementos Argos (CEMARGOS.CL)</option>
-                    <option value="NUTRESA.CL">🍫 Grupo Nutresa (NUTRESA.CL)</option>
-                    <option value="AVAL">🏦 Grupo Aval (AVAL)</option>
-                  </optgroup>
-                  <optgroup label="ETFs y Fondos Globales">
-                    <option value="SPY">🇺🇸 S&amp;P 500 ETF (SPY)</option>
-                    <option value="QQQ">💻 Nasdaq 100 ETF (QQQ)</option>
-                    <option value="VT">🌍 Vanguard Total World Stock (VT)</option>
-                    <option value="AGG">🛡️ iShares U.S. Aggregate Bond (AGG)</option>
-                  </optgroup>
-                  <option value="__custom__">🔎 Otro ticker personalizado...</option>
-                </select>
-              </label>
-              <label class="field hidden" id="mktCustomTickerWrap">
-                <span>Ticker (ej. NU, VOO, BVC.CL, CORFICOLCF.CL)</span>
-                <input type="text" id="mktCustomTicker" placeholder="Ej: VOO o BVC.CL" maxlength="20" />
-              </label>
-              <p id="bvcSyncStatus" class="hint hidden"></p>
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Tendencia (vs Media 200d)</span>
-                  <select id="mktTrend">
-                    <option value="alcista">Alcista (+)</option>
-                    <option value="lateral" selected>Lateral (=)</option>
-                    <option value="bajista">Bajista (-)</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>Volatilidad / Riesgo (VIX)</span>
-                  <select id="mktVolatility">
-                    <option value="baja">Baja (&lt;15%)</option>
-                    <option value="moderada" selected>Moderada (15-25%)</option>
-                    <option value="alta">Alta (&gt;25%)</option>
-                  </select>
-                </label>
-              </div>
-
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Valoración (P/E Relativo)</span>
-                  <select id="mktValuation">
-                    <option value="barato">Barato / Descuento</option>
-                    <option value="justo" selected>Justo / Promedio</option>
-                    <option value="caro">Caro / Sobrecomprado</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>Liquidez / Tasas Macro</span>
-                  <select id="mktLiquidity">
-                    <option value="expansiva">Expansiva (recorte tasas)</option>
-                    <option value="neutral" selected>Neutral</option>
-                    <option value="restrictiva">Restrictiva (tasas altas)</option>
-                  </select>
-                </label>
-              </div>
-
-              <div class="form-row-2">
-                <label class="field">
-                  <span>Tasa Renta Fija Ref. (% E.A.)</span>
-                  <input type="number" id="mktRiskFree" min="0" max="50" step="0.1" value="10.5" />
-                </label>
-                <label class="field">
-                  <span>Tu perfil de riesgo</span>
-                  <select id="mktRiskProfile">
-                    <option value="conservador">Conservador</option>
-                    <option value="moderado" selected>Moderado</option>
-                    <option value="agresivo">Agresivo</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <label class="field">
-                <span>Capital inicial</span>
-                <input type="number" id="mktInitial" min="0" step="any" value="2000000" required />
-              </label>
-              <label class="field">
-                <span>Aporte periódico</span>
-                <input type="number" id="mktContribution" min="0" step="any" value="300000" required />
-              </label>
-            </div>
-
-            <div class="form-row-2">
-              <label class="field">
-                <span>Frecuencia de aporte</span>
-                <select id="mktFrequency">
-                  <option value="mensual" selected>Mensual (12/año)</option>
-                  <option value="semanal">Semanal (52/año)</option>
-                  <option value="diario">Diario (365/año)</option>
-                  <option value="ninguno">Sin aportes</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Horizonte (años)</span>
-                <input type="number" id="mktHorizonYears" min="1" max="40" value="5" required />
-              </label>
-            </div>
-
-            <div class="btn-row">
-              <button type="submit" class="btn btn-primary">🔮 Simular Mercado</button>
-              <button type="button" id="btnApplyToProjector" class="btn btn-secondary">📈 Llevar al Proyector</button>
-            </div>
-          </form>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Instrumento</th>
+                  <th class="num">Tasa E.A.</th>
+                  <th>Aporte</th>
+                  <th>Horizonte</th>
+                  <th class="num">Invertido</th>
+                  <th class="num">Rendimiento Neto</th>
+                  <th class="num">Saldo Final</th>
+                  <th class="actions-col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="compTableBody"></tbody>
+            </table>
+            <p id="compEmptyState" class="empty-state hidden">
+              Aún no has guardado escenarios. Configura uno en la pestaña "Proyector de Metas" y haz clic en "Guardar en Portafolio".
+            </p>
+          </div>
         </section>
+      </main>
 
-        <!-- Right: Viability Score, Monte Carlo Fan Chart & Allocation -->
-        <div class="stack">
-          <section class="kpi-grid">
-            <article class="kpi-card">
-              <span class="kpi-label">Índice de Viabilidad</span>
-              <strong class="kpi-value" id="mktScoreVal">62 / 100</strong>
-              <span class="kpi-meta" id="mktRegimeBadge">Régimen: Moderado</span>
-            </article>
-            <article class="kpi-card">
-              <span class="kpi-label">Retorno Est. / Volatilidad</span>
-              <strong class="kpi-value accent" id="mktReturnVol">12.5% / 16%</strong>
-              <span class="kpi-meta" id="mktSharpeMeta">Prima vs Renta Fija: +2.0%</span>
-            </article>
-            <article class="kpi-card">
-              <span class="kpi-label">Resultado Más Probable (Moda)</span>
-              <strong class="kpi-value positive" id="mktModeVal">$0</strong>
-              <span class="kpi-meta" id="mktMedianSub">Mediana P50: $0</span>
-              <span class="kpi-meta" id="mktRangeMeta">Rango P10–P90: $0 – $0</span>
-            </article>
-            <article class="kpi-card">
-              <span class="kpi-label">Prob. Superar Renta Fija</span>
-              <strong class="kpi-value" id="mktBeatProb">0%</strong>
-              <span class="kpi-meta" id="mktDrawdownMeta">Drawdown máx. est.: -15%</span>
-            </article>
-          </section>
+      <!-- ==================== TAB 4: PREDICTOR BURSÁTIL ==================== -->
+      <main id="tab-predictor" class="tab-panel">
+        <header class="page-header">
+          <div>
+            <h2>Predictor de Viabilidad Bursátil</h2>
+            <p class="page-sub">Evalúa acciones BVC, ETFs o fondos mediante 300 simulaciones Monte Carlo y asignación sugerida.</p>
+          </div>
+        </header>
 
+        <div class="proyector-layout">
           <section class="card">
             <div class="card-header wrap">
-              <h2>Simulación Monte Carlo (300 trayectorias)</h2>
-              <div class="legend-pills">
-                <span class="pill"><i class="dot dot-mode"></i> Más probable (Moda)</span>
-                <span class="pill"><i class="dot dot-interest"></i> P50 (Mediana)</span>
-                <span class="pill"><i class="dot dot-contrib"></i> Banda P10–P90</span>
-                <span class="pill"><i class="dot dot-rf"></i> Renta Fija Ref.</span>
+              <h3>Viabilidad del Mercado</h3>
+              <select id="mktPreset" class="select-sm" title="Escenario macroeconómico">
+                <option value="custom">Personalizado</option>
+                <option value="bull">🟢 Mercado Alcista (Bull)</option>
+                <option value="neutral" selected>🟡 Mercado Neutral / Mixto</option>
+                <option value="bear">🔴 Mercado Bajista (Bear)</option>
+                <option value="crisis">⚡ Alta Volatilidad / Crisis</option>
+              </select>
+            </div>
+
+            <form id="mktForm" class="form-grid">
+              <div class="sub-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span class="sub-panel-title">Activo / Mercado a Evaluar</span>
+                  <button type="button" id="btnSyncBvc" class="btn btn-ghost btn-xs" title="Consultar datos reales vía server.py">
+                    🔄 Sincronizar Activo
+                  </button>
+                </div>
+                <label class="field">
+                  <span>Acción BVC, ETF o Fondo</span>
+                  <select id="mktAssetSelect">
+                    <optgroup label="Mercado General BVC">
+                      <option value="ICOLCAP.CL" selected>📊 MSCI COLCAP — Mercado General BVC</option>
+                      <option value="GXG">🇨🇴 Global X MSCI Colombia ETF (GXG)</option>
+                    </optgroup>
+                    <optgroup label="Acciones BVC">
+                      <option value="ECOPETROL.CL">🛢️ Ecopetrol (ECOPETROL.CL / EC)</option>
+                      <option value="PFBCOLOM.CL">🏦 Bancolombia Pref. (PFBCOLOM.CL / CIB)</option>
+                      <option value="ISA.CL">⚡ ISA Interconexión Eléctrica (ISA.CL)</option>
+                      <option value="GEB.CL">🔌 Grupo Energía Bogotá (GEB.CL)</option>
+                      <option value="GRUPOSURA.CL">🏛️ Grupo Sura (GRUPOSURA.CL)</option>
+                      <option value="CEMARGOS.CL">🧱 Cementos Argos (CEMARGOS.CL)</option>
+                      <option value="NUTRESA.CL">🍫 Grupo Nutresa (NUTRESA.CL)</option>
+                      <option value="AVAL">🏦 Grupo Aval (AVAL)</option>
+                    </optgroup>
+                    <optgroup label="ETFs y Fondos Globales">
+                      <option value="SPY">🇺🇸 S&amp;P 500 ETF (SPY)</option>
+                      <option value="QQQ">💻 Nasdaq 100 ETF (QQQ)</option>
+                      <option value="VT">🌍 Vanguard Total World Stock (VT)</option>
+                      <option value="AGG">🛡️ iShares U.S. Aggregate Bond (AGG)</option>
+                    </optgroup>
+                    <option value="__custom__">🔎 Otro ticker personalizado...</option>
+                  </select>
+                </label>
+                <label class="field hidden" id="mktCustomTickerWrap">
+                  <span>Ticker (ej. NU, VOO, BVC.CL, CORFICOLCF.CL)</span>
+                  <input type="text" id="mktCustomTicker" placeholder="Ej: VOO o BVC.CL" maxlength="20" />
+                </label>
+                <p id="bvcSyncStatus" class="hint hidden"></p>
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Tendencia (vs Media 200d)</span>
+                    <select id="mktTrend">
+                      <option value="alcista">Alcista (+)</option>
+                      <option value="lateral" selected>Lateral (=)</option>
+                      <option value="bajista">Bajista (-)</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Volatilidad / Riesgo (VIX)</span>
+                    <select id="mktVolatility">
+                      <option value="baja">Baja (&lt;15%)</option>
+                      <option value="moderada" selected>Moderada (15-25%)</option>
+                      <option value="alta">Alta (&gt;25%)</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Valoración (P/E Relativo)</span>
+                    <select id="mktValuation">
+                      <option value="barato">Barato / Descuento</option>
+                      <option value="justo" selected>Justo / Promedio</option>
+                      <option value="caro">Caro / Sobrecomprado</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Liquidez / Tasas Macro</span>
+                    <select id="mktLiquidity">
+                      <option value="expansiva">Expansiva (recorte tasas)</option>
+                      <option value="neutral" selected>Neutral</option>
+                      <option value="restrictiva">Restrictiva (tasas altas)</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="form-row-2">
+                  <label class="field">
+                    <span>Tasa Renta Fija Ref. (% E.A.)</span>
+                    <input type="number" id="mktRiskFree" min="0" max="50" step="0.1" value="10.5" />
+                  </label>
+                  <label class="field">
+                    <span>Tu perfil de riesgo</span>
+                    <select id="mktRiskProfile">
+                      <option value="conservador">Conservador</option>
+                      <option value="moderado" selected>Moderado</option>
+                      <option value="agresivo">Agresivo</option>
+                    </select>
+                  </label>
+                </div>
               </div>
-            </div>
-            <div class="growth-chart-wrap">
-              <canvas id="monteCarloChart" width="760" height="290"></canvas>
-            </div>
+
+              <div class="form-row-2">
+                <label class="field">
+                  <span>Capital inicial</span>
+                  <input type="number" id="mktInitial" min="0" step="any" value="2000000" required />
+                </label>
+                <label class="field">
+                  <span>Aporte periódico</span>
+                  <input type="number" id="mktContribution" min="0" step="any" value="300000" required />
+                </label>
+              </div>
+
+              <div class="form-row-2">
+                <label class="field">
+                  <span>Frecuencia de aporte</span>
+                  <select id="mktFrequency">
+                    <option value="mensual" selected>Mensual (12/año)</option>
+                    <option value="semanal">Semanal (52/año)</option>
+                    <option value="diario">Diario (365/año)</option>
+                    <option value="ninguno">Sin aportes</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Horizonte (años)</span>
+                  <input type="number" id="mktHorizonYears" min="1" max="40" value="5" required />
+                </label>
+              </div>
+
+              <div class="btn-row">
+                <button type="submit" class="btn btn-primary">🔮 Simular Mercado</button>
+                <button type="button" id="btnApplyToProjector" class="btn btn-secondary">📈 Llevar al Proyector</button>
+              </div>
+            </form>
           </section>
 
-          <section class="card">
-            <div class="card-header wrap">
-              <h2>Asignación Sugerida según Viabilidad</h2>
-              <span class="badge" id="mktStrategyTag">Estrategia Balanceada</span>
-            </div>
-            <div class="alloc-bar" id="mktAllocBar" aria-label="Distribución sugerida"></div>
-            <div class="alloc-legend" id="mktAllocLegend"></div>
-            <p class="hint" id="mktDiagnosisText" style="margin-top: 10px;"></p>
-          </section>
+          <div class="stack">
+            <section class="kpi-grid">
+              <article class="kpi-card">
+                <span class="kpi-label">Índice de Viabilidad</span>
+                <strong class="kpi-value" id="mktScoreVal">62 / 100</strong>
+                <span class="kpi-meta" id="mktRegimeBadge">Régimen: Moderado</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Retorno Est. / Volatilidad</span>
+                <strong class="kpi-value accent" id="mktReturnVol">12.5% / 16%</strong>
+                <span class="kpi-meta" id="mktSharpeMeta">Prima vs Renta Fija: +2.0%</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Resultado Más Probable (Moda)</span>
+                <strong class="kpi-value positive" id="mktModeVal">$0</strong>
+                <span class="kpi-meta" id="mktMedianSub">Mediana P50: $0</span>
+                <span class="kpi-meta" id="mktRangeMeta">Rango P10–P90: $0 – $0</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Prob. Superar Renta Fija</span>
+                <strong class="kpi-value" id="mktBeatProb">0%</strong>
+                <span class="kpi-meta" id="mktDrawdownMeta">Drawdown máx. est.: -15%</span>
+              </article>
+            </section>
+
+            <section class="card">
+              <div class="card-header wrap">
+                <h3>Simulación Monte Carlo (300 trayectorias)</h3>
+                <div class="legend-pills">
+                  <span class="pill"><i class="dot dot-mode"></i> Más probable (Moda)</span>
+                  <span class="pill"><i class="dot dot-interest"></i> P50 (Mediana)</span>
+                  <span class="pill"><i class="dot dot-contrib"></i> Banda P10–P90</span>
+                  <span class="pill"><i class="dot dot-rf"></i> Renta Fija Ref.</span>
+                </div>
+              </div>
+              <div class="growth-chart-wrap">
+                <canvas id="monteCarloChart" width="760" height="290"></canvas>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-header wrap">
+                <h3>Asignación Sugerida según Viabilidad</h3>
+                <span class="badge" id="mktStrategyTag">Estrategia Balanceada</span>
+              </div>
+              <div class="alloc-bar" id="mktAllocBar" aria-label="Distribución sugerida"></div>
+              <div class="alloc-legend" id="mktAllocLegend"></div>
+              <p class="hint" id="mktDiagnosisText" style="margin-top: 10px;"></p>
+            </section>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
