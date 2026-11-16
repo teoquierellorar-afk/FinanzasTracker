@@ -375,6 +375,11 @@
             </div>
 
             <form id="projForm" class="form-grid">
+              <div class="type-toggle" id="projModeToggle" role="group" aria-label="Modo de proyección">
+                <button type="button" class="type-btn active" data-proj-mode="forward">Proyectar Aporte</button>
+                <button type="button" class="type-btn" data-proj-mode="goal">Calcular por Meta 🎯</button>
+              </div>
+
               <div class="inset-group">
                 <label class="inset-row">
                   <span>Nombre</span>
@@ -388,6 +393,10 @@
                     <option value="fondo">📊 Fondo de Inversión</option>
                   </select>
                 </label>
+                <label class="inset-row hidden" id="projGoalRow">
+                  <span>Meta objetivo</span>
+                  <input type="number" id="projTargetGoal" min="1" step="any" value="10000000" class="inset-input num" />
+                </label>
                 <label class="inset-row">
                   <span>Capital inicial</span>
                   <input type="number" id="projInitial" min="0" step="any" value="1000000" required class="inset-input num" />
@@ -396,7 +405,7 @@
                   <span>Tasa (% E.A.)</span>
                   <input type="number" id="projRate" min="0" max="200" step="0.01" value="11.00" required class="inset-input num" />
                 </label>
-                <label class="inset-row">
+                <label class="inset-row" id="projContribRow">
                   <span>Aporte</span>
                   <input type="number" id="projContribution" min="0" step="any" value="200000" required class="inset-input num" />
                 </label>
@@ -487,6 +496,18 @@
           </section>
 
           <div class="stack">
+            <section id="projGoalResultBox" class="card goal-banner hidden">
+              <div class="goal-banner-top">
+                <div>
+                  <span class="kpi-label">Aporte necesario para alcanzar tu meta</span>
+                  <div class="goal-amount" id="projRequiredAmount">$0 / mes</div>
+                </div>
+                <span class="badge badge-alto" id="projGoalStatusBadge">Meta alcanzable</span>
+              </div>
+              <div class="goal-equivalents" id="projGoalEquivalents"></div>
+              <p class="hint" id="projGoalTrackerHint"></p>
+            </section>
+
             <section class="kpi-grid">
               <article class="kpi-card">
                 <span class="kpi-label">Capital Final</span>

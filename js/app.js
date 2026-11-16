@@ -1,4 +1,4 @@
-import { runProjection, evaluateMarketViability, runMonteCarloProjection } from './finance.js';
+import { runProjection, solveRequiredContribution, evaluateMarketViability, runMonteCarloProjection } from './finance.js';
 import { drawDonutChart, drawMonthlyBarChart, drawGrowthChart, drawMonteCarloChart } from './charts.js';
 
 const STORAGE_KEY = 'finanzasflow_v1';
@@ -745,9 +745,85 @@ function writeProjConfig(cfg) {
   updateInstrumentPanels();
 }
 
+let currentProjMode = 'forward';
+
+document.querySelectorAll('#projModeToggle [data-proj-mode]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    currentProjMode = btn.dataset.projMode;
+    document.querySelectorAll('#projModeToggle [data-proj-mode]').forEach((b) => {
+      b.classList.toggle('active', b === btn);
+    });
+    const isGoal = currentProjMode === 'goal';
+    document.getElementById('projGoalRow').classList.toggle('hidden', !isGoal);
+    document.getElementById('projContribRow').classList.toggle('hidden', isGoal);
+    document.getElementById('projGoalResultBox').classList.toggle('hidden', !isGoal);
+    if (isGoal && document.getElementById('projFrequency').value === 'ninguno') {
+      document.getElementById('projFrequency').value = 'mensual';
+    }
+    computeAndRenderProjection();
+  });
+});
+
 function computeAndRenderProjection() {
   const cfg = readProjConfig();
-  const res = runProjection(cfg);
+  let res;
+
+  if (currentProjMode === 'goal') {
+    const targetGoal = Number(document.getElementById('projTargetGoal').value) || 0;
+    const solved = solveRequiredContribution(cfg, targetGoal);
+    cfg.contribution = solved.requiredContribution;
+    cfg.frequency = solved.frequency;
+    res = solved.projection;
+
+    const freqUnit =
+      solved.frequency === 'diario' ? 'día' : solved.frequency === 'semanal' ? 'semana' : 'mes';
+    document.getElementById('projRequiredAmount').textContent = `${formatMoney(solved.requiredContribution)} / ${freqUnit}`;
+
+    const monthlyEq =
+      solved.frequency === 'diario'
+        ? (solved.requiredContribution * 365) / 12
+        : solved.frequency === 'semanal'
+        ? (solved.requiredContribution * 52) / 12
+        : solved.requiredContribution;
+    const weeklyEq = (monthlyEq * 12) / 52;
+    const dailyEq = (monthlyEq * 12) / 365;
+
+    document.getElementById('projGoalEquivalents').innerHTML = `
+      <span class="badge">📅 Diario: ${formatMoney(dailyEq)}</span>
+      <span class="badge">📆 Semanal: ${formatMoney(weeklyEq)}</span>
+      <span class="badge">🗓️ Mensual: ${formatMoney(monthlyEq)}</span>
+    `;
+
+    const periodTxs = getPeriodTransactions();
+    let ing = 0;
+    let egr = 0;
+    periodTxs.forEach((t) => (t.type === 'ingreso' ? (ing += t.amount) : (egr += t.amount)));
+    const trackerSavings = Math.max(0, ing - egr);
+
+    const statusBadge = document.getElementById('projGoalStatusBadge');
+    const hintEl = document.getElementById('projGoalTrackerHint');
+    if (solved.requiredContribution === 0) {
+      statusBadge.textContent = '¡Ya cubierto!';
+      statusBadge.className = 'badge badge-alto';
+      hintEl.textContent = 'Tu capital inicial + rendimientos ya superan la meta en ese horizonte.';
+    } else if (trackerSavings >= monthlyEq) {
+      statusBadge.textContent = 'Meta alcanzable';
+      statusBadge.className = 'badge badge-alto';
+      hintEl.textContent = `✅ Tu ahorro actual del Tracker (${formatMoney(trackerSavings)}/mes) cubre este aporte requerido.`;
+    } else if (trackerSavings > 0) {
+      const gap = monthlyEq - trackerSavings;
+      statusBadge.textContent = 'Requiere ajuste';
+      statusBadge.className = 'badge badge-moderado';
+      hintEl.textContent = `💡 Te faltan ${formatMoney(gap)}/mes frente a tu balance actual del Tracker (${formatMoney(trackerSavings)}/mes).`;
+    } else {
+      statusBadge.textContent = 'Planifica tu ahorro';
+      statusBadge.className = 'badge badge-moderado';
+      hintEl.textContent = 'Registra tus ingresos y egresos en el Tracker para comparar tu capacidad real de ahorro.';
+    }
+  } else {
+    res = runProjection(cfg);
+  }
+
   lastProjectionResult = { cfg, res };
 
   document.getElementById('projFinalValue').textContent = formatMoney(res.finalBalance);
@@ -856,7 +932,7 @@ document.getElementById('btnUseTrackerSavings').addEventListener('click', () => 
 });
 
 document.getElementById('btnSaveScenario').addEventListener('click', () => {
-  const cfg = readProjConfig();
+  const cfg = lastProjectionResult?.cfg ? { ...lastProjectionResult.cfg } : readProjConfig();
   state.scenarios.push({ id: uid('sc'), ...cfg });
   saveState();
   renderComparator();

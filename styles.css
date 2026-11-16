@@ -1463,6 +1463,36 @@ input[type="color"] {
   color: var(--negative);
 }
 
+/* ==================== GOAL-SEEK BANNER ==================== */
+.goal-banner {
+  border-left: 4px solid var(--primary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goal-banner-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.goal-amount {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.goal-equivalents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

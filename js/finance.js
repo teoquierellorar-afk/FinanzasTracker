@@ -505,3 +505,36 @@ export function runMonteCarloProjection({
     series,
   };
 }
+
+/**
+ * Calcula el aporte periódico exacto necesario para alcanzar `targetGoal`
+ * bajo cualquier instrumento (Cajita, CDT o Fondo) y frecuencia (diario, semanal, mensual).
+ */
+export function solveRequiredContribution(cfg, targetGoal) {
+  const goal = Math.max(0, Number(targetGoal) || 0);
+  const freq = cfg.frequency === 'ninguno' ? 'mensual' : cfg.frequency || 'mensual';
+  const baseCfg = { ...cfg, frequency: freq };
+
+  const resZero = runProjection({ ...baseCfg, contribution: 0 });
+  if (goal <= resZero.finalBalance) {
+    return {
+      requiredContribution: 0,
+      frequency: freq,
+      baseFinalWithoutContrib: resZero.finalBalance,
+      projection: resZero,
+    };
+  }
+
+  const probe = 10000;
+  const resProbe = runProjection({ ...baseCfg, contribution: probe });
+  const deltaPerUnit = (resProbe.finalBalance - resZero.finalBalance) / probe;
+  const requiredContribution = deltaPerUnit > 0 ? Math.max(0, (goal - resZero.finalBalance) / deltaPerUnit) : 0;
+
+  const projection = runProjection({ ...baseCfg, contribution: requiredContribution });
+  return {
+    requiredContribution,
+    frequency: freq,
+    baseFinalWithoutContrib: resZero.finalBalance,
+    projection,
+  };
+}
