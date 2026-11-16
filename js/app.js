@@ -20,6 +20,13 @@ const DEFAULT_CATEGORIES = [
   { id: 'cat_oec', name: 'Otros Egresos', type: 'egreso', icon: '📦', color: '#64748b', builtin: true },
 ];
 
+const DEFAULT_ACCOUNTS = [
+  { id: 'acc_efe', name: 'Efectivo', icon: '💵', color: '#2d6a4f', initial: 0, builtin: true },
+  { id: 'acc_neq', name: 'Nequi', icon: '📱', color: '#7c3aed', initial: 0, builtin: false },
+  { id: 'acc_dav', name: 'Daviplata', icon: '🔴', color: '#e11d48', initial: 0, builtin: false },
+  { id: 'acc_ban', name: 'Cuenta Bancaria', icon: '🏦', color: '#0284c7', initial: 0, builtin: false },
+];
+
 const CURRENCY_LOCALES = {
   COP: { locale: 'es-CO', decimals: 0 },
   USD: { locale: 'en-US', decimals: 2 },
@@ -39,6 +46,7 @@ function loadState() {
       return {
         currency: parsed.currency || 'COP',
         categories: Array.isArray(parsed.categories) && parsed.categories.length ? parsed.categories : [...DEFAULT_CATEGORIES],
+        accounts: Array.isArray(parsed.accounts) && parsed.accounts.length ? parsed.accounts : [...DEFAULT_ACCOUNTS],
         transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
         scenarios: Array.isArray(parsed.scenarios) ? parsed.scenarios : [],
       };
@@ -49,6 +57,7 @@ function loadState() {
   return {
     currency: 'COP',
     categories: [...DEFAULT_CATEGORIES],
+    accounts: [...DEFAULT_ACCOUNTS],
     transactions: [],
     scenarios: [],
   };
@@ -116,6 +125,7 @@ currencySelect.value = state.currency;
 currencySelect.addEventListener('change', () => {
   state.currency = currencySelect.value;
   saveState();
+  renderAccounts();
   renderTracker();
   computeAndRenderProjection();
   renderComparator();
@@ -146,6 +156,7 @@ document.getElementById('inputImportJson').addEventListener('change', (ev) => {
       state = {
         currency: data.currency || 'COP',
         categories: data.categories,
+        accounts: Array.isArray(data.accounts) && data.accounts.length ? data.accounts : [...DEFAULT_ACCOUNTS],
         transactions: data.transactions,
         scenarios: Array.isArray(data.scenarios) ? data.scenarios : [],
       };
@@ -169,28 +180,29 @@ document.getElementById('btnLoadDemo').addEventListener('click', () => {
   };
 
   state.transactions = [
-    { id: uid('tx'), type: 'ingreso', amount: 4800000, date: `${ym(0)}-01`, categoryId: 'cat_sal', note: 'Salario mensual' },
-    { id: uid('tx'), type: 'ingreso', amount: 850000, date: `${ym(0)}-10`, categoryId: 'cat_fre', note: 'Proyecto freelance web' },
-    { id: uid('tx'), type: 'egreso', amount: 1350000, date: `${ym(0)}-02`, categoryId: 'cat_viv', note: 'Arriendo apartamento' },
-    { id: uid('tx'), type: 'egreso', amount: 620000, date: `${ym(0)}-05`, categoryId: 'cat_ali', note: 'Mercado quincenal' },
-    { id: uid('tx'), type: 'egreso', amount: 240000, date: `${ym(0)}-06`, categoryId: 'cat_ser', note: 'Energía, agua e internet' },
-    { id: uid('tx'), type: 'egreso', amount: 180000, date: `${ym(0)}-08`, categoryId: 'cat_tra', note: 'Transporte y gasolina' },
-    { id: uid('tx'), type: 'egreso', amount: 290000, date: `${ym(0)}-12`, categoryId: 'cat_oci', note: 'Salidas y streaming' },
-    { id: uid('tx'), type: 'egreso', amount: 1000000, date: `${ym(0)}-14`, categoryId: 'cat_inv', note: 'Aporte a Cajita Nu' },
+    { id: uid('tx'), type: 'ingreso', amount: 4800000, date: `${ym(0)}-01`, categoryId: 'cat_sal', accountId: 'acc_ban', note: 'Salario mensual' },
+    { id: uid('tx'), type: 'ingreso', amount: 850000, date: `${ym(0)}-10`, categoryId: 'cat_fre', accountId: 'acc_neq', note: 'Proyecto freelance web' },
+    { id: uid('tx'), type: 'egreso', amount: 1350000, date: `${ym(0)}-02`, categoryId: 'cat_viv', accountId: 'acc_ban', note: 'Arriendo apartamento' },
+    { id: uid('tx'), type: 'egreso', amount: 620000, date: `${ym(0)}-05`, categoryId: 'cat_ali', accountId: 'acc_neq', note: 'Mercado quincenal' },
+    { id: uid('tx'), type: 'egreso', amount: 240000, date: `${ym(0)}-06`, categoryId: 'cat_ser', accountId: 'acc_dav', note: 'Energía, agua e internet' },
+    { id: uid('tx'), type: 'egreso', amount: 180000, date: `${ym(0)}-08`, categoryId: 'cat_tra', accountId: 'acc_efe', note: 'Transporte y gasolina' },
+    { id: uid('tx'), type: 'egreso', amount: 290000, date: `${ym(0)}-12`, categoryId: 'cat_oci', accountId: 'acc_neq', note: 'Salidas y streaming' },
+    { id: uid('tx'), type: 'egreso', amount: 1000000, date: `${ym(0)}-14`, categoryId: 'cat_inv', accountId: 'acc_ban', note: 'Aporte a Cajita Nu' },
 
-    { id: uid('tx'), type: 'ingreso', amount: 4800000, date: `${ym(1)}-01`, categoryId: 'cat_sal', note: 'Salario mensual' },
-    { id: uid('tx'), type: 'egreso', amount: 1350000, date: `${ym(1)}-02`, categoryId: 'cat_viv', note: 'Arriendo' },
-    { id: uid('tx'), type: 'egreso', amount: 710000, date: `${ym(1)}-07`, categoryId: 'cat_ali', note: 'Supermercado' },
-    { id: uid('tx'), type: 'egreso', amount: 230000, date: `${ym(1)}-09`, categoryId: 'cat_ser', note: 'Servicios públicos' },
-    { id: uid('tx'), type: 'egreso', amount: 900000, date: `${ym(1)}-15`, categoryId: 'cat_inv', note: 'Ahorro CDT' },
+    { id: uid('tx'), type: 'ingreso', amount: 4800000, date: `${ym(1)}-01`, categoryId: 'cat_sal', accountId: 'acc_ban', note: 'Salario mensual' },
+    { id: uid('tx'), type: 'egreso', amount: 1350000, date: `${ym(1)}-02`, categoryId: 'cat_viv', accountId: 'acc_ban', note: 'Arriendo' },
+    { id: uid('tx'), type: 'egreso', amount: 710000, date: `${ym(1)}-07`, categoryId: 'cat_ali', accountId: 'acc_dav', note: 'Supermercado' },
+    { id: uid('tx'), type: 'egreso', amount: 230000, date: `${ym(1)}-09`, categoryId: 'cat_ser', accountId: 'acc_neq', note: 'Servicios públicos' },
+    { id: uid('tx'), type: 'egreso', amount: 900000, date: `${ym(1)}-15`, categoryId: 'cat_inv', accountId: 'acc_ban', note: 'Ahorro CDT' },
 
-    { id: uid('tx'), type: 'ingreso', amount: 4800000, date: `${ym(2)}-01`, categoryId: 'cat_sal', note: 'Salario mensual' },
-    { id: uid('tx'), type: 'egreso', amount: 1350000, date: `${ym(2)}-02`, categoryId: 'cat_viv', note: 'Arriendo' },
-    { id: uid('tx'), type: 'egreso', amount: 650000, date: `${ym(2)}-11`, categoryId: 'cat_ali', note: 'Mercado' },
-    { id: uid('tx'), type: 'egreso', amount: 310000, date: `${ym(2)}-18`, categoryId: 'cat_salu', note: 'Odontología' },
+    { id: uid('tx'), type: 'ingreso', amount: 4800000, date: `${ym(2)}-01`, categoryId: 'cat_sal', accountId: 'acc_ban', note: 'Salario mensual' },
+    { id: uid('tx'), type: 'egreso', amount: 1350000, date: `${ym(2)}-02`, categoryId: 'cat_viv', accountId: 'acc_ban', note: 'Arriendo' },
+    { id: uid('tx'), type: 'egreso', amount: 650000, date: `${ym(2)}-11`, categoryId: 'cat_ali', accountId: 'acc_efe', note: 'Mercado' },
+    { id: uid('tx'), type: 'egreso', amount: 310000, date: `${ym(2)}-18`, categoryId: 'cat_salu', accountId: 'acc_dav', note: 'Odontología' },
   ];
 
   saveState();
+  renderAccounts();
   renderTracker();
   showToast('Datos de ejemplo cargados');
 });
@@ -234,25 +246,27 @@ txForm.addEventListener('submit', (e) => {
   const amount = Number(document.getElementById('txAmount').value);
   const date = document.getElementById('txDate').value;
   const categoryId = document.getElementById('txCategory').value;
+  const accountId = document.getElementById('txAccount').value;
   const note = document.getElementById('txNote').value.trim();
 
-  if (!(amount > 0) || !date || !categoryId) return;
+  if (!(amount > 0) || !date || !categoryId || !accountId) return;
 
   if (editId) {
     const idx = state.transactions.findIndex((t) => t.id === editId);
     if (idx !== -1) {
-      state.transactions[idx] = { id: editId, type: currentTxType, amount, date, categoryId, note };
+      state.transactions[idx] = { id: editId, type: currentTxType, amount, date, categoryId, accountId, note };
     }
     resetTxForm();
     showToast('Movimiento actualizado');
   } else {
-    state.transactions.push({ id: uid('tx'), type: currentTxType, amount, date, categoryId, note });
+    state.transactions.push({ id: uid('tx'), type: currentTxType, amount, date, categoryId, accountId, note });
     document.getElementById('txAmount').value = '';
     document.getElementById('txNote').value = '';
     showToast('Movimiento registrado');
   }
 
   saveState();
+  renderAccounts();
   renderTracker();
   closeTxSheet();
 });
@@ -327,9 +341,131 @@ function renderCategories() {
   });
 }
 
+// Cuentas / Billeteras CRUD
+document.getElementById('btnToggleAccForm').addEventListener('click', () => {
+  document.getElementById('accForm').classList.toggle('hidden');
+});
+
+document.getElementById('accForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = document.getElementById('accName').value.trim();
+  const initial = Number(document.getElementById('accInitial').value) || 0;
+  const icon = document.getElementById('accIcon').value.trim() || '💳';
+  const color = document.getElementById('accColor').value || '#1b4332';
+  if (!name) return;
+
+  state.accounts.push({ id: uid('acc'), name, initial, icon, color, builtin: false });
+  saveState();
+  document.getElementById('accName').value = '';
+  document.getElementById('accInitial').value = '0';
+  document.getElementById('accForm').classList.add('hidden');
+  populateAccountSelects();
+  renderAccounts();
+  showToast(`Cuenta "${name}" agregada`);
+});
+
+function populateAccountSelects(selectedId = null) {
+  const txAcc = document.getElementById('txAccount');
+  const prevTx = selectedId || txAcc.value;
+  txAcc.innerHTML = state.accounts
+    .map((a) => `<option value="${a.id}">${a.icon} ${a.name}</option>`)
+    .join('');
+  if (prevTx && state.accounts.some((a) => a.id === prevTx)) {
+    txAcc.value = prevTx;
+  }
+
+  const filterAcc = document.getElementById('filterTxAccount');
+  const prevFilter = filterAcc.value;
+  filterAcc.innerHTML =
+    `<option value="all">Todas las cuentas</option>` +
+    state.accounts.map((a) => `<option value="${a.id}">${a.icon} ${a.name}</option>`).join('');
+  if ([...filterAcc.options].some((o) => o.value === prevFilter)) {
+    filterAcc.value = prevFilter;
+  }
+}
+
+function getAccountById(id) {
+  return (
+    state.accounts.find((a) => a.id === id) ||
+    state.accounts[0] || { id: 'acc_efe', name: 'Efectivo', icon: '💵', color: '#2d6a4f', initial: 0 }
+  );
+}
+
+function computeAccountBalance(acc) {
+  let bal = Number(acc.initial) || 0;
+  const fallbackId = state.accounts[0]?.id;
+  state.transactions.forEach((t) => {
+    const tAccId = t.accountId || fallbackId;
+    if (tAccId === acc.id) {
+      bal += t.type === 'ingreso' ? t.amount : -t.amount;
+    }
+  });
+  return bal;
+}
+
+function renderAccounts() {
+  const wrap = document.getElementById('accountCards');
+  const activeFilter = document.getElementById('filterTxAccount').value;
+
+  wrap.innerHTML = state.accounts
+    .map((acc) => {
+      const bal = computeAccountBalance(acc);
+      const isActive = activeFilter === acc.id;
+      return `
+        <div class="account-pill-card ${isActive ? 'active' : ''}" data-select-acc="${acc.id}" role="button" tabindex="0">
+          <div class="account-avatar" style="background:${acc.color}22; color:${acc.color}">${acc.icon}</div>
+          <div class="account-info">
+            <span class="account-name">${escapeHtml(acc.name)}</span>
+            <strong class="account-balance">${formatMoney(bal)}</strong>
+          </div>
+          ${
+            acc.builtin
+              ? ''
+              : `<button type="button" class="account-del" data-del-acc="${acc.id}" title="Eliminar cuenta" aria-label="Eliminar cuenta">×</button>`
+          }
+        </div>
+      `;
+    })
+    .join('');
+
+  wrap.querySelectorAll('[data-select-acc]').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('[data-del-acc]')) return;
+      const id = card.dataset.selectAcc;
+      const filterEl = document.getElementById('filterTxAccount');
+      filterEl.value = filterEl.value === id ? 'all' : id;
+      renderAccounts();
+      renderTracker();
+    });
+  });
+
+  wrap.querySelectorAll('[data-del-acc]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.delAcc;
+      const inUse = state.transactions.some((t) => t.accountId === id);
+      if (inUse) {
+        showToast('No puedes eliminar una cuenta con movimientos asociados');
+        return;
+      }
+      state.accounts = state.accounts.filter((a) => a.id !== id);
+      if (document.getElementById('filterTxAccount').value === id) {
+        document.getElementById('filterTxAccount').value = 'all';
+      }
+      saveState();
+      populateAccountSelects();
+      renderAccounts();
+      renderTracker();
+    });
+  });
+}
+
 // Filtros del Tracker
-['filterMonth', 'chartTypeFilter', 'filterTxType', 'filterTxCategory', 'searchTx'].forEach((id) => {
-  document.getElementById(id).addEventListener('input', renderTracker);
+['filterMonth', 'chartTypeFilter', 'filterTxType', 'filterTxCategory', 'filterTxAccount', 'searchTx'].forEach((id) => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (id === 'filterTxAccount') renderAccounts();
+    renderTracker();
+  });
 });
 
 function populateMonthFilter() {
@@ -449,11 +585,14 @@ function renderTracker() {
   // Tabla filtrada
   const typeFilter = document.getElementById('filterTxType').value;
   const catFilter = document.getElementById('filterTxCategory').value;
+  const accFilter = document.getElementById('filterTxAccount').value;
   const search = document.getElementById('searchTx').value.trim().toLowerCase();
+  const fallbackAccId = state.accounts[0]?.id;
 
   const filtered = periodTxs
     .filter((t) => (typeFilter === 'all' ? true : t.type === typeFilter))
     .filter((t) => (catFilter === 'all' ? true : t.categoryId === catFilter))
+    .filter((t) => (accFilter === 'all' ? true : (t.accountId || fallbackAccId) === accFilter))
     .filter((t) => (!search ? true : (t.note || '').toLowerCase().includes(search)))
     .sort((a, b) => b.date.localeCompare(a.date));
 
@@ -472,12 +611,14 @@ function renderTracker() {
   tbody.innerHTML = filtered
     .map((t) => {
       const cat = getCategoryById(t.categoryId);
+      const acc = getAccountById(t.accountId);
       const cls = t.type === 'ingreso' ? 'amount-pos' : 'amount-neg';
       const sign = t.type === 'ingreso' ? '+' : '-';
       return `
         <tr>
           <td>${t.date}</td>
           <td><span class="badge"><span class="cat-dot" style="background:${cat.color}"></span>${cat.icon} ${cat.name}</span></td>
+          <td><span class="badge">${acc.icon} ${escapeHtml(acc.name)}</span></td>
           <td>${escapeHtml(t.note || '—')}</td>
           <td class="num ${cls}">${sign}${formatMoney(t.amount)}</td>
           <td class="actions-col">
@@ -493,6 +634,7 @@ function renderTracker() {
     mobileList.innerHTML = filtered
       .map((t) => {
         const cat = getCategoryById(t.categoryId);
+        const acc = getAccountById(t.accountId);
         const cls = t.type === 'ingreso' ? 'amount-pos' : 'amount-neg';
         const sign = t.type === 'ingreso' ? '+' : '-';
         const title = t.note ? escapeHtml(t.note) : cat.name;
@@ -501,7 +643,7 @@ function renderTracker() {
             <div class="wallet-avatar" style="background:${cat.color}22; color:${cat.color}">${cat.icon}</div>
             <div class="wallet-main">
               <div class="wallet-title">${title}</div>
-              <div class="wallet-sub">${cat.name} · ${t.date}</div>
+              <div class="wallet-sub">${cat.name} · ${acc.icon} ${escapeHtml(acc.name)} · ${t.date}</div>
             </div>
             <div class="wallet-right">
               <div class="wallet-amount ${cls}">${sign}${formatMoney(t.amount)}</div>
@@ -523,6 +665,7 @@ function renderTracker() {
       currentTxType = tx.type;
       document.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('active', b.dataset.type === tx.type));
       populateTxCategorySelect(tx.categoryId);
+      populateAccountSelects(tx.accountId || fallbackAccId);
       document.getElementById('txId').value = tx.id;
       document.getElementById('txAmount').value = tx.amount;
       document.getElementById('txDate').value = tx.date;
@@ -538,6 +681,7 @@ function renderTracker() {
     btn.addEventListener('click', () => {
       state.transactions = state.transactions.filter((x) => x.id !== btn.dataset.delTx);
       saveState();
+      renderAccounts();
       renderTracker();
       showToast('Movimiento eliminado');
     });
@@ -1173,6 +1317,8 @@ applyTheme(getPreferredTheme());
 function renderAll() {
   renderCategories();
   populateTxCategorySelect();
+  populateAccountSelects();
+  renderAccounts();
   renderTracker();
   updateInstrumentPanels();
   computeAndRenderProjection();

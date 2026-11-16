@@ -1373,6 +1373,96 @@ input[type="color"] {
   animation: toastPop 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
+/* ==================== SEPARADOR DE CUENTAS ==================== */
+.accounts-section {
+  margin-bottom: 18px;
+}
+
+.accounts-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.accounts-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.account-pill-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1.5px solid transparent;
+  min-width: 158px;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.16s cubic-bezier(0.32, 0.72, 0, 1), border-color 0.16s ease, background 0.16s ease;
+}
+
+.account-pill-card:hover {
+  transform: translateY(-1px);
+}
+
+.account-pill-card.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.account-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.account-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-balance {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.account-del {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.account-del:hover {
+  color: var(--negative);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

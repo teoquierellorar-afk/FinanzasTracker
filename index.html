@@ -149,6 +149,41 @@
           </article>
         </section>
 
+        <!-- Separador de Cuentas / Billeteras -->
+        <section class="card accounts-section" id="accountsSection">
+          <div class="card-header">
+            <div>
+              <h3>Cuentas y Billeteras</h3>
+              <p class="hint">Toca una cuenta para filtrar sus movimientos o añade las que uses.</p>
+            </div>
+            <button type="button" id="btnToggleAccForm" class="btn btn-secondary btn-xs">+ Nueva cuenta</button>
+          </div>
+
+          <form id="accForm" class="form-grid hidden" style="margin-bottom: 14px;">
+            <div class="inset-group">
+              <label class="inset-row">
+                <span>Nombre</span>
+                <input type="text" id="accName" maxlength="28" placeholder="Ej: Nu, Lulo, Dale!, Efectivo..." required class="inset-input" />
+              </label>
+              <label class="inset-row">
+                <span>Saldo inicial</span>
+                <input type="number" id="accInitial" step="any" value="0" class="inset-input num" />
+              </label>
+              <label class="inset-row">
+                <span>Ícono</span>
+                <input type="text" id="accIcon" maxlength="4" value="💳" class="inset-input" style="max-width:64px; text-align:right;" />
+              </label>
+              <label class="inset-row">
+                <span>Color</span>
+                <input type="color" id="accColor" value="#1b4332" />
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Agregar Cuenta</button>
+          </form>
+
+          <div id="accountCards" class="accounts-strip"></div>
+        </section>
+
         <!-- Botón destacado en móvil para abrir Bottom Sheet -->
         <button type="button" id="btnOpenTxSheet" class="mobile-fab-cta">
           <span>+ Nuevo Movimiento</span>
@@ -187,6 +222,10 @@
                   <label class="inset-row">
                     <span>Categoría</span>
                     <select id="txCategory" required class="inset-select"></select>
+                  </label>
+                  <label class="inset-row">
+                    <span>Cuenta</span>
+                    <select id="txAccount" required class="inset-select"></select>
                   </label>
                   <label class="inset-row">
                     <span>Nota</span>
@@ -280,6 +319,9 @@
                   <select id="filterTxCategory" class="pill-select">
                     <option value="all">Todas las categorías</option>
                   </select>
+                  <select id="filterTxAccount" class="pill-select">
+                    <option value="all">Todas las cuentas</option>
+                  </select>
                 </div>
               </div>
 
@@ -290,6 +332,7 @@
                     <tr>
                       <th>Fecha</th>
                       <th>Categoría</th>
+                      <th>Cuenta</th>
                       <th>Descripción</th>
                       <th class="num">Monto</th>
                       <th class="actions-col">Acciones</th>
