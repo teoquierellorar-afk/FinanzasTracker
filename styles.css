@@ -38,6 +38,7 @@ html, body {
   font-size: 15px;
   line-height: 1.45;
   min-height: 100vh;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -277,6 +278,8 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ==================== CARDS & INSET GROUPED LISTS ==================== */
@@ -285,6 +288,8 @@ html, body {
   border-radius: var(--radius-card);
   padding: 20px;
   box-shadow: var(--shadow-card);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .card-header {
@@ -624,6 +629,13 @@ input[type="color"] {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-box canvas {
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 .chart-subtitle {
@@ -1159,14 +1171,26 @@ input[type="color"] {
     cursor: pointer;
   }
 
+  .card {
+    padding: 16px 14px;
+  }
+
   .filters-inline {
     width: 100%;
+    min-width: 0;
+  }
+
+  .field-inline {
+    width: 100%;
+    justify-content: space-between;
+    min-width: 0;
   }
 
   .pill-input,
   .pill-select {
-    flex: 1;
-    min-width: 120px;
+    flex: 1 1 130px;
+    min-width: 0;
+    max-width: 100%;
     font-size: 14px;
   }
 
