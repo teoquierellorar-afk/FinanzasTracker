@@ -250,6 +250,7 @@ txForm.addEventListener('submit', (e) => {
 
   saveState();
   renderTracker();
+  closeTxSheet();
 });
 
 function resetTxForm() {
@@ -453,10 +454,12 @@ function renderTracker() {
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const tbody = document.getElementById('txTableBody');
+  const mobileList = document.getElementById('txMobileList');
   const emptyEl = document.getElementById('txEmptyState');
 
   if (filtered.length === 0) {
     tbody.innerHTML = '';
+    if (mobileList) mobileList.innerHTML = '';
     emptyEl.classList.remove('hidden');
     return;
   }
@@ -482,7 +485,34 @@ function renderTracker() {
     })
     .join('');
 
-  tbody.querySelectorAll('[data-edit-tx]').forEach((btn) => {
+  if (mobileList) {
+    mobileList.innerHTML = filtered
+      .map((t) => {
+        const cat = getCategoryById(t.categoryId);
+        const cls = t.type === 'ingreso' ? 'amount-pos' : 'amount-neg';
+        const sign = t.type === 'ingreso' ? '+' : '-';
+        const title = t.note ? escapeHtml(t.note) : cat.name;
+        return `
+          <div class="wallet-item">
+            <div class="wallet-avatar" style="background:${cat.color}22; color:${cat.color}">${cat.icon}</div>
+            <div class="wallet-main">
+              <div class="wallet-title">${title}</div>
+              <div class="wallet-sub">${cat.name} · ${t.date}</div>
+            </div>
+            <div class="wallet-right">
+              <div class="wallet-amount ${cls}">${sign}${formatMoney(t.amount)}</div>
+              <div class="wallet-actions">
+                <button type="button" data-edit-tx="${t.id}" aria-label="Editar">Editar</button>
+                <button type="button" data-del-tx="${t.id}" aria-label="Eliminar">Eliminar</button>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  document.querySelectorAll('[data-edit-tx]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const tx = state.transactions.find((x) => x.id === btn.dataset.editTx);
       if (!tx) return;
@@ -496,10 +526,11 @@ function renderTracker() {
       document.getElementById('formTxTitle').textContent = 'Editar Movimiento';
       document.getElementById('btnSaveTx').textContent = 'Actualizar Movimiento';
       document.getElementById('btnCancelEditTx').classList.remove('hidden');
+      openTxSheetIfMobile();
     });
   });
 
-  tbody.querySelectorAll('[data-del-tx]').forEach((btn) => {
+  document.querySelectorAll('[data-del-tx]').forEach((btn) => {
     btn.addEventListener('click', () => {
       state.transactions = state.transactions.filter((x) => x.id !== btn.dataset.delTx);
       saveState();
@@ -1016,6 +1047,77 @@ document.getElementById('btnSyncBvc').addEventListener('click', async () => {
     btn.disabled = false;
     btn.textContent = '🔄 Sincronizar Activo';
   }
+});
+
+/* ==================== CONTROLES MÓVILES iOS ==================== */
+function openTxSheetIfMobile() {
+  if (window.innerWidth >= 768) return;
+  document.getElementById('txCard').classList.add('sheet-open');
+  document.getElementById('txSheetBackdrop').classList.remove('hidden');
+}
+
+function closeTxSheet() {
+  document.getElementById('txCard').classList.remove('sheet-open');
+  document.getElementById('txSheetBackdrop').classList.add('hidden');
+}
+
+document.getElementById('btnOpenTxSheet').addEventListener('click', () => {
+  resetTxForm();
+  document.getElementById('txCard').classList.add('sheet-open');
+  document.getElementById('txSheetBackdrop').classList.remove('hidden');
+});
+
+document.getElementById('btnCloseTxSheet').addEventListener('click', closeTxSheet);
+document.getElementById('txSheetBackdrop').addEventListener('click', closeTxSheet);
+
+// Action Sheet (•••) en móvil
+const mobileActionSheet = document.getElementById('mobileActionSheet');
+const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
+const mobileCurrencySelect = document.getElementById('mobileCurrencySelect');
+mobileCurrencySelect.value = state.currency;
+
+function closeMobileMenu() {
+  mobileActionSheet.classList.add('hidden');
+  mobileMenuBackdrop.classList.add('hidden');
+}
+
+document.querySelectorAll('[data-open-menu]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    mobileCurrencySelect.value = state.currency;
+    mobileActionSheet.classList.remove('hidden');
+    mobileMenuBackdrop.classList.remove('hidden');
+  });
+});
+
+document.getElementById('btnCloseMobileSheet').addEventListener('click', closeMobileMenu);
+mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
+
+mobileCurrencySelect.addEventListener('change', () => {
+  currencySelect.value = mobileCurrencySelect.value;
+  currencySelect.dispatchEvent(new Event('change'));
+  closeMobileMenu();
+});
+
+document.getElementById('btnMobileDemo').addEventListener('click', () => {
+  document.getElementById('btnLoadDemo').click();
+  closeMobileMenu();
+});
+
+document.getElementById('btnMobileExport').addEventListener('click', () => {
+  document.getElementById('btnExportJson').click();
+  closeMobileMenu();
+});
+
+document.getElementById('btnMobileImport').addEventListener('click', () => {
+  document.getElementById('inputImportJson').click();
+  closeMobileMenu();
+});
+
+// Expandir / compactar carrusel de categorías en móvil
+document.getElementById('btnToggleAllCats').addEventListener('click', (e) => {
+  const chips = document.getElementById('categoryChips');
+  const expanded = chips.classList.toggle('expanded');
+  e.target.textContent = expanded ? 'Compactar' : 'Ver todas';
 });
 
 function renderAll() {

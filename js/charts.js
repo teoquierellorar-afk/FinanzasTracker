@@ -117,12 +117,12 @@ export function drawMonthlyBarChart(canvas, monthsData) {
 
     // Barra Ingresos
     const hIng = (m.ingresos / maxVal) * chartH;
-    ctx.fillStyle = '#10b981';
+    ctx.fillStyle = '#34C759';
     ctx.fillRect(cx - barW - 2, padT + chartH - hIng, barW, hIng);
 
     // Barra Egresos
     const hEgr = (m.egresos / maxVal) * chartH;
-    ctx.fillStyle = '#f43f5e';
+    ctx.fillStyle = '#FF3B30';
     ctx.fillRect(cx + 2, padT + chartH - hEgr, barW, hEgr);
 
     // Etiqueta mes
