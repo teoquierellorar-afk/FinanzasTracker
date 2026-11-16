@@ -59,7 +59,11 @@ let currentTxType = 'egreso';
 let lastProjectionResult = null;
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignorar errores de cuota o modo privado en Safari
+  }
 }
 
 function formatMoney(value) {

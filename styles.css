@@ -904,12 +904,18 @@ input[type="color"] {
 
 /* ==================== MOBILE (< 768px) — NATIVE iOS APP ==================== */
 @media (max-width: 767px) {
+  .app-shell {
+    display: block;
+  }
   .sidebar {
-    width: 100%;
-    height: 0;
+    width: auto;
+    height: auto;
     padding: 0;
     border: none;
     position: static;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
   .brand,
   .sidebar-footer,
