@@ -24,6 +24,68 @@
   --shadow-pill: 0 1px 4px rgba(0, 0, 0, 0.10), 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-card: #1C1C1E;
+  --bg-subtle: #2C2C2E;
+  --fill: #2C2C2E;
+  --hairline: rgba(255, 255, 255, 0.12);
+  --text: #FFFFFF;
+  --text-secondary: #EBEBF5;
+  --text-muted: #8E8E93;
+  --primary: #40916C;
+  --primary-hover: #52B788;
+  --primary-soft: rgba(64, 145, 108, 0.22);
+  --positive: #30D158;
+  --positive-text: #30D158;
+  --positive-soft: rgba(48, 209, 88, 0.16);
+  --negative: #FF453A;
+  --negative-soft: rgba(255, 69, 58, 0.16);
+  --accent: #52B788;
+  --accent-soft: rgba(82, 183, 136, 0.16);
+  --warning: #FF9F0A;
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-pill: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .sidebar {
+  background: rgba(28, 28, 30, 0.85);
+}
+
+[data-theme="dark"] .type-btn.active {
+  background: #3A3A3C;
+}
+
+[data-theme="dark"] .sub-panel .inset-group,
+[data-theme="dark"] .viability-box {
+  background: #1C1C1E;
+}
+
+[data-theme="dark"] .data-table th {
+  background: #2C2C2E;
+}
+
+[data-theme="dark"] .inset-select option,
+[data-theme="dark"] .pill-select option {
+  background: #1C1C1E;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .toast {
+  background: rgba(44, 44, 46, 0.94);
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 767px) {
+  [data-theme="dark"] .main-tabs {
+    background: rgba(28, 28, 30, 0.88);
+  }
+  [data-theme="dark"] .sheet-handle {
+    background: #48484A;
+  }
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;

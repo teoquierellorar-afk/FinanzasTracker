@@ -1124,6 +1124,52 @@ document.getElementById('btnToggleAllCats').addEventListener('click', (e) => {
   e.target.textContent = expanded ? 'Compactar' : 'Ver todas';
 });
 
+// Tema Claro / Oscuro iOS
+const THEME_KEY = 'finanzasflow_theme';
+
+function getPreferredTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark' || saved === 'light') return saved;
+  } catch {
+    // Ignorar en modo privado
+  }
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  const isDark = theme === 'dark';
+  document.documentElement.dataset.theme = theme;
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', isDark ? '#000000' : '#F2F2F7');
+
+  const btnDesk = document.getElementById('btnThemeToggle');
+  const btnMob = document.getElementById('btnMobileTheme');
+  if (btnDesk) btnDesk.textContent = isDark ? '☀️ Modo claro' : '🌙 Modo oscuro';
+  if (btnMob) btnMob.textContent = isDark ? '☀️ Cambiar a Modo Claro' : '🌙 Cambiar a Modo Oscuro';
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  try {
+    localStorage.setItem(THEME_KEY, next);
+  } catch {
+    // Ignorar en modo privado
+  }
+  applyTheme(next);
+  renderTracker();
+  computeAndRenderProjection();
+  renderPredictor();
+}
+
+document.getElementById('btnThemeToggle').addEventListener('click', toggleTheme);
+document.getElementById('btnMobileTheme').addEventListener('click', () => {
+  toggleTheme();
+  closeMobileMenu();
+});
+
+applyTheme(getPreferredTheme());
+
 function renderAll() {
   renderCategories();
   populateTxCategorySelect();

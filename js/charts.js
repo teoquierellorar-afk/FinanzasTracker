@@ -1,7 +1,22 @@
 /**
- * Gráficos ligeros en HTML5 Canvas sin dependencias externas (soporta HiDPI).
- * Paleta optimizada para tema Minimalista Claro.
+ * Gráficos ligeros en HTML5 Canvas sin dependencias externas (soporta HiDPI y Modo Oscuro iOS).
  */
+
+function getChartTheme() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  return {
+    dark,
+    textPrimary: dark ? '#FFFFFF' : '#000000',
+    textMuted: dark ? '#8E8E93' : '#64748b',
+    grid: dark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(15, 23, 42, 0.08)',
+    emptyRing: dark ? '#2C2C2E' : '#e2e8f0',
+    forestLine: dark ? '#52B788' : '#1b4332',
+    incomeBar: dark ? '#30D158' : '#34C759',
+    expenseBar: dark ? '#FF453A' : '#FF3B30',
+    rfLine: dark ? '#FF9F0A' : '#b45309',
+    modeStroke: dark ? '#1C1C1E' : '#FFFFFF',
+  };
+}
 
 function setupCanvas(canvas, logicalW, logicalH) {
   const dpr = window.devicePixelRatio || 1;
@@ -24,6 +39,7 @@ function compactNumber(val) {
 }
 
 export function drawDonutChart(canvas, items, formatMoney) {
+  const theme = getChartTheme();
   const { ctx, w, h } = setupCanvas(canvas, 300, 220);
   const total = items.reduce((acc, it) => acc + it.value, 0);
   const cx = w / 2;
@@ -35,11 +51,11 @@ export function drawDonutChart(canvas, items, formatMoney) {
     ctx.beginPath();
     ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
     ctx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = theme.emptyRing;
     ctx.fill();
 
-    ctx.fillStyle = '#64748b';
-    ctx.font = '600 13px Inter, sans-serif';
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '600 13px -apple-system, Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('Sin datos', cx, cy);
@@ -53,24 +69,25 @@ export function drawDonutChart(canvas, items, formatMoney) {
     ctx.arc(cx, cy, outerR, startAngle, startAngle + slice);
     ctx.arc(cx, cy, innerR, startAngle + slice, startAngle, true);
     ctx.closePath();
-    ctx.fillStyle = item.color || '#4f46e5';
+    ctx.fillStyle = item.color || '#40916c';
     ctx.fill();
     startAngle += slice;
   });
 
   // Centro
-  ctx.fillStyle = '#64748b';
-  ctx.font = '500 11px Inter, sans-serif';
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '500 11px -apple-system, Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('Total', cx, cy - 10);
 
-  ctx.fillStyle = '#0f172a';
-  ctx.font = '700 13px Inter, sans-serif';
+  ctx.fillStyle = theme.textPrimary;
+  ctx.font = '700 13px -apple-system, Inter, sans-serif';
   ctx.fillText(formatMoney(total), cx, cy + 9);
 }
 
 export function drawMonthlyBarChart(canvas, monthsData) {
+  const theme = getChartTheme();
   const { ctx, w, h } = setupCanvas(canvas, 400, 220);
   const padL = 46;
   const padR = 12;
@@ -80,8 +97,8 @@ export function drawMonthlyBarChart(canvas, monthsData) {
   const chartH = h - padT - padB;
 
   if (!monthsData || monthsData.length === 0) {
-    ctx.fillStyle = '#64748b';
-    ctx.font = '500 13px Inter, sans-serif';
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '500 13px -apple-system, Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Sin historial mensual aún', w / 2, h / 2);
     return;
@@ -93,9 +110,9 @@ export function drawMonthlyBarChart(canvas, monthsData) {
   );
 
   // Líneas guía horizontales
-  ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
-  ctx.fillStyle = '#64748b';
-  ctx.font = '500 10px Inter, sans-serif';
+  ctx.strokeStyle = theme.grid;
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '500 10px -apple-system, Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
 
@@ -117,17 +134,17 @@ export function drawMonthlyBarChart(canvas, monthsData) {
 
     // Barra Ingresos
     const hIng = (m.ingresos / maxVal) * chartH;
-    ctx.fillStyle = '#34C759';
+    ctx.fillStyle = theme.incomeBar;
     ctx.fillRect(cx - barW - 2, padT + chartH - hIng, barW, hIng);
 
     // Barra Egresos
     const hEgr = (m.egresos / maxVal) * chartH;
-    ctx.fillStyle = '#FF3B30';
+    ctx.fillStyle = theme.expenseBar;
     ctx.fillRect(cx + 2, padT + chartH - hEgr, barW, hEgr);
 
     // Etiqueta mes
-    ctx.fillStyle = '#64748b';
-    ctx.font = '500 10.5px Inter, sans-serif';
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '500 10.5px -apple-system, Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText(m.label, cx, padT + chartH + 8);
@@ -135,6 +152,7 @@ export function drawMonthlyBarChart(canvas, monthsData) {
 }
 
 export function drawGrowthChart(canvas, series) {
+  const theme = getChartTheme();
   const { ctx, w, h } = setupCanvas(canvas, 760, 290);
   const padL = 62;
   const padR = 18;
@@ -144,8 +162,8 @@ export function drawGrowthChart(canvas, series) {
   const chartH = h - padT - padB;
 
   if (!series || series.length < 2) {
-    ctx.fillStyle = '#64748b';
-    ctx.font = '500 13px Inter, sans-serif';
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '500 13px -apple-system, Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Calcula una proyección para ver la curva', w / 2, h / 2);
     return;
@@ -155,9 +173,9 @@ export function drawGrowthChart(canvas, series) {
   const n = series.length;
 
   // Grid Y
-  ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
-  ctx.fillStyle = '#64748b';
-  ctx.font = '500 11px Inter, sans-serif';
+  ctx.strokeStyle = theme.grid;
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '500 11px -apple-system, Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
 
@@ -174,31 +192,31 @@ export function drawGrowthChart(canvas, series) {
   const xAt = (idx) => padL + (idx / (n - 1)) * chartW;
   const yAt = (val) => padT + chartH - (val / maxTotal) * chartH;
 
-  // Área 3 (Total = Inicial + Aportes + Rendimientos) -> Verde bosque medio
+  // Área 3 (Total = Inicial + Aportes + Rendimientos)
   ctx.beginPath();
   ctx.moveTo(xAt(0), yAt(0));
   series.forEach((s, i) => ctx.lineTo(xAt(i), yAt(s.total)));
   ctx.lineTo(xAt(n - 1), yAt(0));
   ctx.closePath();
-  ctx.fillStyle = 'rgba(45, 106, 79, 0.24)';
+  ctx.fillStyle = theme.dark ? 'rgba(82, 183, 136, 0.28)' : 'rgba(45, 106, 79, 0.24)';
   ctx.fill();
 
-  // Área 2 (Inicial + Aportes) -> Salvia suave
+  // Área 2 (Inicial + Aportes)
   ctx.beginPath();
   ctx.moveTo(xAt(0), yAt(0));
   series.forEach((s, i) => ctx.lineTo(xAt(i), yAt(s.initial + s.contributions)));
   ctx.lineTo(xAt(n - 1), yAt(0));
   ctx.closePath();
-  ctx.fillStyle = 'rgba(64, 145, 108, 0.24)';
+  ctx.fillStyle = theme.dark ? 'rgba(64, 145, 108, 0.30)' : 'rgba(64, 145, 108, 0.24)';
   ctx.fill();
 
-  // Área 1 (Capital Inicial) -> Verde bosque profundo
+  // Área 1 (Capital Inicial)
   ctx.beginPath();
   ctx.moveTo(xAt(0), yAt(0));
   series.forEach((s, i) => ctx.lineTo(xAt(i), yAt(s.initial)));
   ctx.lineTo(xAt(n - 1), yAt(0));
   ctx.closePath();
-  ctx.fillStyle = 'rgba(27, 67, 50, 0.30)';
+  ctx.fillStyle = theme.dark ? 'rgba(45, 106, 79, 0.38)' : 'rgba(27, 67, 50, 0.30)';
   ctx.fill();
 
   // Línea superior (Saldo total)
@@ -207,14 +225,14 @@ export function drawGrowthChart(canvas, series) {
     if (i === 0) ctx.moveTo(xAt(i), yAt(s.total));
     else ctx.lineTo(xAt(i), yAt(s.total));
   });
-  ctx.strokeStyle = '#1b4332';
+  ctx.strokeStyle = theme.forestLine;
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
   // Etiquetas X (máximo 6 marcas)
   const ticks = Math.min(6, n);
-  ctx.fillStyle = '#64748b';
-  ctx.font = '500 10.5px Inter, sans-serif';
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '500 10.5px -apple-system, Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (let t = 0; t < ticks; t++) {
@@ -224,6 +242,7 @@ export function drawGrowthChart(canvas, series) {
 }
 
 export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
+  const theme = getChartTheme();
   const { ctx, w, h } = setupCanvas(canvas, 760, 290);
   const padL = 62;
   const padR = 26;
@@ -238,9 +257,9 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
   const n = series.length;
 
   // Grid Y
-  ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
-  ctx.fillStyle = '#64748b';
-  ctx.font = '500 11px Inter, sans-serif';
+  ctx.strokeStyle = theme.grid;
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '500 11px -apple-system, Inter, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
 
@@ -267,7 +286,7 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
     ctx.lineTo(xAt(i), yAt(series[i].p10));
   }
   ctx.closePath();
-  ctx.fillStyle = 'rgba(64, 145, 108, 0.16)';
+  ctx.fillStyle = theme.dark ? 'rgba(82, 183, 136, 0.20)' : 'rgba(64, 145, 108, 0.16)';
   ctx.fill();
 
   // Línea Renta Fija Benchmark (punteada ámbar)
@@ -278,7 +297,7 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
     if (i === 0) ctx.moveTo(xAt(i), yAt(s.rf));
     else ctx.lineTo(xAt(i), yAt(s.rf));
   });
-  ctx.strokeStyle = '#b45309';
+  ctx.strokeStyle = theme.rfLine;
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.restore();
@@ -289,7 +308,7 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
     if (i === 0) ctx.moveTo(xAt(i), yAt(s.p50));
     else ctx.lineTo(xAt(i), yAt(s.p50));
   });
-  ctx.strokeStyle = '#1b4332';
+  ctx.strokeStyle = theme.forestLine;
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
@@ -299,17 +318,17 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
     const my = yAt(mostProbableFinal);
     ctx.beginPath();
     ctx.arc(mx, my, 5.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#9333ea';
+    ctx.fillStyle = '#AF52DE';
     ctx.fill();
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = theme.modeStroke;
     ctx.lineWidth = 2;
     ctx.stroke();
   }
 
   // Etiquetas X
   const ticks = Math.min(6, n);
-  ctx.fillStyle = '#64748b';
-  ctx.font = '500 10.5px Inter, sans-serif';
+  ctx.fillStyle = theme.textMuted;
+  ctx.font = '500 10.5px -apple-system, Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (let t = 0; t < ticks; t++) {
