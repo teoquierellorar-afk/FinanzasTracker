@@ -1493,6 +1493,164 @@ input[type="color"] {
   gap: 8px;
 }
 
+/* ==================== TRANSFERENCIAS, PRESUPUESTOS, EMERGENCIA, RECURRENTES ==================== */
+.type-toggle-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.type-btn.active[data-type="transferencia"] {
+  color: var(--primary);
+}
+
+.amount-transfer {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.ios-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 26px;
+  background: var(--fill);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.ios-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ios-switch:checked {
+  background: var(--positive);
+}
+
+.ios-switch:checked::after {
+  transform: translateX(18px);
+}
+
+.emergency-bar {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.emergency-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.emergency-title {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--positive);
+  transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s ease;
+}
+
+.progress-fill.warn {
+  background: var(--warning);
+}
+
+.progress-fill.danger {
+  background: var(--negative);
+}
+
+.budget-list,
+.recurring-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.budget-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.budget-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.budget-nums {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.recurring-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.recurring-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.recurring-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recurring-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.recurring-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -182,6 +182,18 @@
           </form>
 
           <div id="accountCards" class="accounts-strip"></div>
+
+          <!-- Medidor de Fondo de Emergencia -->
+          <div id="emergencyBanner" class="emergency-bar">
+            <div class="emergency-top">
+              <span class="emergency-title">🛡️ Fondo de Emergencia</span>
+              <span class="badge" id="emergencyBadge">0 meses de cobertura</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="emergencyProgress" style="width: 0%;"></div>
+            </div>
+            <p class="hint" id="emergencyHint">Calculado con tu liquidez total frente al gasto mensual promedio.</p>
+          </div>
         </section>
 
         <!-- Botón destacado en móvil para abrir Bottom Sheet -->
@@ -205,9 +217,10 @@
               </div>
               <form id="txForm" class="form-grid">
                 <input type="hidden" id="txId" />
-                <div class="type-toggle" role="group" aria-label="Tipo de movimiento">
+                <div class="type-toggle type-toggle-3" role="group" aria-label="Tipo de movimiento">
                   <button type="button" class="type-btn active" data-type="egreso">Egreso</button>
                   <button type="button" class="type-btn" data-type="ingreso">Ingreso</button>
+                  <button type="button" class="type-btn" data-type="transferencia">Transferir</button>
                 </div>
 
                 <div class="inset-group">
@@ -219,17 +232,25 @@
                     <span>Fecha</span>
                     <input type="date" id="txDate" required class="inset-input" />
                   </label>
-                  <label class="inset-row">
+                  <label class="inset-row" id="txCatRow">
                     <span>Categoría</span>
                     <select id="txCategory" required class="inset-select"></select>
                   </label>
                   <label class="inset-row">
-                    <span>Cuenta</span>
+                    <span id="txAccountLabel">Cuenta</span>
                     <select id="txAccount" required class="inset-select"></select>
+                  </label>
+                  <label class="inset-row hidden" id="txToAccountRow">
+                    <span>Cuenta destino</span>
+                    <select id="txToAccount" class="inset-select"></select>
                   </label>
                   <label class="inset-row">
                     <span>Nota</span>
                     <input type="text" id="txNote" maxlength="100" placeholder="Ej: Mercado, Nómina..." class="inset-input" />
+                  </label>
+                  <label class="inset-row" id="txRecurringRow">
+                    <span>Guardar como fijo mensual</span>
+                    <input type="checkbox" id="txRecurring" class="ios-switch" />
                   </label>
                 </div>
 
@@ -260,6 +281,10 @@
                     </select>
                   </label>
                   <label class="inset-row">
+                    <span>Tope mensual (opcional)</span>
+                    <input type="number" id="catBudget" min="0" step="any" placeholder="0" class="inset-input num" />
+                  </label>
+                  <label class="inset-row">
                     <span>Ícono</span>
                     <input type="text" id="catIcon" maxlength="4" value="🏷️" class="inset-input" style="max-width:64px; text-align:right;" />
                   </label>
@@ -272,6 +297,37 @@
               </form>
 
               <div id="categoryChips" class="category-chips"></div>
+            </section>
+
+            <!-- Presupuestos por Categoría -->
+            <section class="card" id="budgetCard">
+              <div class="card-header wrap">
+                <h3>Presupuestos del Mes</h3>
+                <button type="button" id="btnToggleBudgetForm" class="btn btn-secondary btn-xs">⚙️ Configurar</button>
+              </div>
+              <form id="budgetForm" class="form-grid hidden" style="margin-bottom: 12px;">
+                <div class="inset-group">
+                  <label class="inset-row">
+                    <span>Categoría</span>
+                    <select id="budgetCatSelect" class="inset-select"></select>
+                  </label>
+                  <label class="inset-row">
+                    <span>Tope mensual</span>
+                    <input type="number" id="budgetLimitInput" min="0" step="any" placeholder="Ej: 500000" required class="inset-input num" />
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Guardar Presupuesto</button>
+              </form>
+              <div id="budgetList" class="budget-list"></div>
+            </section>
+
+            <!-- Movimientos Recurrentes / Fijos -->
+            <section class="card" id="recurringCard">
+              <div class="card-header wrap">
+                <h3>Fijos y Suscripciones</h3>
+                <button type="button" id="btnApplyAllRecurring" class="btn btn-secondary btn-xs">⚡ Aplicar pendientes</button>
+              </div>
+              <div id="recurringList" class="recurring-list"></div>
             </section>
           </div>
 
@@ -315,6 +371,7 @@
                     <option value="all">Todos</option>
                     <option value="ingreso">Solo Ingresos</option>
                     <option value="egreso">Solo Egresos</option>
+                    <option value="transferencia">Transferencias</option>
                   </select>
                   <select id="filterTxCategory" class="pill-select">
                     <option value="all">Todas las categorías</option>
@@ -322,6 +379,7 @@
                   <select id="filterTxAccount" class="pill-select">
                     <option value="all">Todas las cuentas</option>
                   </select>
+                  <button type="button" id="btnExportCsv" class="btn btn-secondary btn-xs" title="Descargar movimientos filtrados en Excel/CSV">📄 CSV</button>
                 </div>
               </div>
 

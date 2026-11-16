@@ -48,6 +48,7 @@ function loadState() {
         categories: Array.isArray(parsed.categories) && parsed.categories.length ? parsed.categories : [...DEFAULT_CATEGORIES],
         accounts: Array.isArray(parsed.accounts) && parsed.accounts.length ? parsed.accounts : [...DEFAULT_ACCOUNTS],
         transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+        recurring: Array.isArray(parsed.recurring) ? parsed.recurring : [],
         scenarios: Array.isArray(parsed.scenarios) ? parsed.scenarios : [],
       };
     }
@@ -59,6 +60,7 @@ function loadState() {
     categories: [...DEFAULT_CATEGORIES],
     accounts: [...DEFAULT_ACCOUNTS],
     transactions: [],
+    recurring: [],
     scenarios: [],
   };
 }
@@ -158,6 +160,7 @@ document.getElementById('inputImportJson').addEventListener('change', (ev) => {
         categories: data.categories,
         accounts: Array.isArray(data.accounts) && data.accounts.length ? data.accounts : [...DEFAULT_ACCOUNTS],
         transactions: data.transactions,
+        recurring: Array.isArray(data.recurring) ? data.recurring : [],
         scenarios: Array.isArray(data.scenarios) ? data.scenarios : [],
       };
       currencySelect.value = state.currency;
@@ -199,6 +202,20 @@ document.getElementById('btnLoadDemo').addEventListener('click', () => {
     { id: uid('tx'), type: 'egreso', amount: 1350000, date: `${ym(2)}-02`, categoryId: 'cat_viv', accountId: 'acc_ban', note: 'Arriendo' },
     { id: uid('tx'), type: 'egreso', amount: 650000, date: `${ym(2)}-11`, categoryId: 'cat_ali', accountId: 'acc_efe', note: 'Mercado' },
     { id: uid('tx'), type: 'egreso', amount: 310000, date: `${ym(2)}-18`, categoryId: 'cat_salu', accountId: 'acc_dav', note: 'Odontología' },
+    { id: uid('tx'), type: 'transferencia', amount: 650000, date: `${ym(0)}-03`, accountId: 'acc_ban', toAccountId: 'acc_neq', note: 'Recarga Nequi mes' },
+  ];
+
+  // Presupuestos demo en categorías
+  state.categories.forEach((c) => {
+    if (c.id === 'cat_ali') c.budget = 800000;
+    if (c.id === 'cat_oci') c.budget = 350000;
+    if (c.id === 'cat_ser') c.budget = 300000;
+  });
+
+  state.recurring = [
+    { id: uid('rec'), type: 'ingreso', amount: 4800000, categoryId: 'cat_sal', accountId: 'acc_ban', note: 'Salario mensual', lastAppliedMonth: ym(0) },
+    { id: uid('rec'), type: 'egreso', amount: 1350000, categoryId: 'cat_viv', accountId: 'acc_ban', note: 'Arriendo apartamento', lastAppliedMonth: ym(0) },
+    { id: uid('rec'), type: 'egreso', amount: 55000, categoryId: 'cat_oci', accountId: 'acc_neq', note: 'Suscripciones streaming', lastAppliedMonth: ym(1) },
   ];
 
   saveState();
@@ -212,12 +229,20 @@ const txForm = document.getElementById('txForm');
 const txDateInput = document.getElementById('txDate');
 txDateInput.value = todayISO();
 
-document.querySelectorAll('.type-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    currentTxType = btn.dataset.type;
-    document.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('active', b === btn));
-    populateTxCategorySelect();
-  });
+function setTxTypeUI(type) {
+  currentTxType = type;
+  document.querySelectorAll('#txForm .type-btn').forEach((b) => b.classList.toggle('active', b.dataset.type === type));
+  const isTransfer = type === 'transferencia';
+  document.getElementById('txCatRow').classList.toggle('hidden', isTransfer);
+  document.getElementById('txCategory').required = !isTransfer;
+  document.getElementById('txToAccountRow').classList.toggle('hidden', !isTransfer);
+  document.getElementById('txAccountLabel').textContent = isTransfer ? 'Cuenta origen' : 'Cuenta';
+  document.getElementById('txRecurringRow').classList.toggle('hidden', isTransfer);
+  if (!isTransfer) populateTxCategorySelect();
+}
+
+document.querySelectorAll('#txForm .type-btn').forEach((btn) => {
+  btn.addEventListener('click', () => setTxTypeUI(btn.dataset.type));
 });
 
 function populateTxCategorySelect(selectedId = null) {
@@ -238,6 +263,18 @@ function populateTxCategorySelect(selectedId = null) {
   if ([...filterCat.options].some((o) => o.value === prevFilter)) {
     filterCat.value = prevFilter;
   }
+
+  const budgetCat = document.getElementById('budgetCatSelect');
+  if (budgetCat) {
+    const prevBud = budgetCat.value;
+    budgetCat.innerHTML = state.categories
+      .filter((c) => c.type === 'egreso')
+      .map((c) => `<option value="${c.id}">${c.icon} ${c.name}</option>`)
+      .join('');
+    if ([...budgetCat.options].some((o) => o.value === prevBud)) {
+      budgetCat.value = prevBud;
+    }
+  }
 }
 
 txForm.addEventListener('submit', (e) => {
@@ -247,26 +284,54 @@ txForm.addEventListener('submit', (e) => {
   const date = document.getElementById('txDate').value;
   const categoryId = document.getElementById('txCategory').value;
   const accountId = document.getElementById('txAccount').value;
+  const toAccountId = document.getElementById('txToAccount').value;
   const note = document.getElementById('txNote').value.trim();
+  const isRecurring = document.getElementById('txRecurring').checked;
 
-  if (!(amount > 0) || !date || !categoryId || !accountId) return;
+  if (!(amount > 0) || !date || !accountId) return;
+  if (currentTxType === 'transferencia') {
+    if (!toAccountId || toAccountId === accountId) {
+      showToast('Elige una cuenta destino distinta a la cuenta origen');
+      return;
+    }
+  } else if (!categoryId) {
+    return;
+  }
+
+  const payload =
+    currentTxType === 'transferencia'
+      ? { type: 'transferencia', amount, date, accountId, toAccountId, note }
+      : { type: currentTxType, amount, date, categoryId, accountId, note };
 
   if (editId) {
     const idx = state.transactions.findIndex((t) => t.id === editId);
     if (idx !== -1) {
-      state.transactions[idx] = { id: editId, type: currentTxType, amount, date, categoryId, accountId, note };
+      state.transactions[idx] = { id: editId, ...payload };
     }
     resetTxForm();
     showToast('Movimiento actualizado');
   } else {
-    state.transactions.push({ id: uid('tx'), type: currentTxType, amount, date, categoryId, accountId, note });
+    state.transactions.push({ id: uid('tx'), ...payload });
+    if (isRecurring && currentTxType !== 'transferencia') {
+      state.recurring.push({
+        id: uid('rec'),
+        type: currentTxType,
+        amount,
+        categoryId,
+        accountId,
+        note: note || getCategoryById(categoryId).name,
+        lastAppliedMonth: date.slice(0, 7),
+      });
+    }
     document.getElementById('txAmount').value = '';
     document.getElementById('txNote').value = '';
-    showToast('Movimiento registrado');
+    document.getElementById('txRecurring').checked = false;
+    showToast(isRecurring ? 'Movimiento registrado y guardado como fijo' : 'Movimiento registrado');
   }
 
   saveState();
   renderAccounts();
+  renderRecurring();
   renderTracker();
   closeTxSheet();
 });
@@ -276,9 +341,11 @@ function resetTxForm() {
   document.getElementById('txAmount').value = '';
   document.getElementById('txNote').value = '';
   document.getElementById('txDate').value = todayISO();
+  document.getElementById('txRecurring').checked = false;
   document.getElementById('formTxTitle').textContent = 'Registrar Movimiento';
   document.getElementById('btnSaveTx').textContent = 'Guardar Movimiento';
   document.getElementById('btnCancelEditTx').classList.add('hidden');
+  setTxTypeUI('egreso');
 }
 
 document.getElementById('btnCancelEditTx').addEventListener('click', resetTxForm);
@@ -292,13 +359,15 @@ document.getElementById('catForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const name = document.getElementById('catName').value.trim();
   const type = document.getElementById('catType').value;
+  const budget = Math.max(0, Number(document.getElementById('catBudget').value) || 0);
   const icon = document.getElementById('catIcon').value.trim() || '🏷️';
-  const color = document.getElementById('catColor').value || '#6366f1';
+  const color = document.getElementById('catColor').value || '#1b4332';
   if (!name) return;
 
-  state.categories.push({ id: uid('cat'), name, type, icon, color, builtin: false });
+  state.categories.push({ id: uid('cat'), name, type, budget, icon, color, builtin: false });
   saveState();
   document.getElementById('catName').value = '';
+  document.getElementById('catBudget').value = '';
   document.getElementById('catForm').classList.add('hidden');
   renderCategories();
   populateTxCategorySelect();
@@ -364,7 +433,7 @@ document.getElementById('accForm').addEventListener('submit', (e) => {
   showToast(`Cuenta "${name}" agregada`);
 });
 
-function populateAccountSelects(selectedId = null) {
+function populateAccountSelects(selectedId = null, selectedToId = null) {
   const txAcc = document.getElementById('txAccount');
   const prevTx = selectedId || txAcc.value;
   txAcc.innerHTML = state.accounts
@@ -372,6 +441,19 @@ function populateAccountSelects(selectedId = null) {
     .join('');
   if (prevTx && state.accounts.some((a) => a.id === prevTx)) {
     txAcc.value = prevTx;
+  }
+
+  const txToAcc = document.getElementById('txToAccount');
+  if (txToAcc) {
+    const prevTo = selectedToId || txToAcc.value;
+    txToAcc.innerHTML = state.accounts
+      .map((a) => `<option value="${a.id}">${a.icon} ${a.name}</option>`)
+      .join('');
+    if (prevTo && state.accounts.some((a) => a.id === prevTo)) {
+      txToAcc.value = prevTo;
+    } else if (state.accounts.length > 1) {
+      txToAcc.value = state.accounts[1].id;
+    }
   }
 
   const filterAcc = document.getElementById('filterTxAccount');
@@ -396,7 +478,10 @@ function computeAccountBalance(acc) {
   const fallbackId = state.accounts[0]?.id;
   state.transactions.forEach((t) => {
     const tAccId = t.accountId || fallbackId;
-    if (tAccId === acc.id) {
+    if (t.type === 'transferencia') {
+      if (tAccId === acc.id) bal -= t.amount;
+      if (t.toAccountId === acc.id) bal += t.amount;
+    } else if (tAccId === acc.id) {
       bal += t.type === 'ingreso' ? t.amount : -t.amount;
     }
   });
@@ -458,6 +543,198 @@ function renderAccounts() {
       renderTracker();
     });
   });
+
+  renderEmergencyFund();
+}
+
+function renderEmergencyFund() {
+  const totalLiquid = state.accounts.reduce((sum, acc) => sum + Math.max(0, computeAccountBalance(acc)), 0);
+
+  // Promedio mensual de egresos (excluyendo transferencias)
+  const monthExpenseMap = new Map();
+  state.transactions
+    .filter((t) => t.type === 'egreso')
+    .forEach((t) => {
+      const ym = t.date.slice(0, 7);
+      monthExpenseMap.set(ym, (monthExpenseMap.get(ym) || 0) + t.amount);
+    });
+
+  const avgMonthlyExpense =
+    monthExpenseMap.size > 0
+      ? [...monthExpenseMap.values()].reduce((a, b) => a + b, 0) / monthExpenseMap.size
+      : 0;
+
+  const badge = document.getElementById('emergencyBadge');
+  const bar = document.getElementById('emergencyProgress');
+  const hint = document.getElementById('emergencyHint');
+
+  if (avgMonthlyExpense <= 0) {
+    badge.textContent = `Liquidez: ${formatMoney(totalLiquid)}`;
+    badge.className = 'badge';
+    bar.style.width = '0%';
+    bar.className = 'progress-fill';
+    hint.textContent = 'Registra egresos para calcular cuántos meses cubre tu liquidez actual.';
+    return;
+  }
+
+  const monthsCovered = totalLiquid / avgMonthlyExpense;
+  const pct = Math.min(100, (monthsCovered / 6) * 100);
+  bar.style.width = `${pct.toFixed(1)}%`;
+
+  if (monthsCovered >= 3) {
+    badge.className = 'badge badge-alto';
+    bar.className = 'progress-fill';
+  } else if (monthsCovered >= 1) {
+    badge.className = 'badge badge-moderado';
+    bar.className = 'progress-fill warn';
+  } else {
+    badge.className = 'badge badge-bajo';
+    bar.className = 'progress-fill danger';
+  }
+
+  badge.textContent = `${monthsCovered.toFixed(1)} meses de cobertura`;
+  hint.textContent = `Liquidez total: ${formatMoney(totalLiquid)} · Gasto mensual prom.: ${formatMoney(avgMonthlyExpense)} (meta: 3–6 meses).`;
+}
+
+// Presupuestos mensuales por categoría
+document.getElementById('btnToggleBudgetForm').addEventListener('click', () => {
+  document.getElementById('budgetForm').classList.toggle('hidden');
+});
+
+document.getElementById('budgetForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const catId = document.getElementById('budgetCatSelect').value;
+  const limit = Math.max(0, Number(document.getElementById('budgetLimitInput').value) || 0);
+  const cat = state.categories.find((c) => c.id === catId);
+  if (!cat) return;
+  cat.budget = limit;
+  saveState();
+  document.getElementById('budgetLimitInput').value = '';
+  document.getElementById('budgetForm').classList.add('hidden');
+  renderBudgets();
+  showToast(limit > 0 ? `Presupuesto de ${cat.name} guardado` : `Presupuesto de ${cat.name} eliminado`);
+});
+
+function renderBudgets() {
+  const wrap = document.getElementById('budgetList');
+  const budgeted = state.categories.filter((c) => c.type === 'egreso' && Number(c.budget) > 0);
+
+  if (budgeted.length === 0) {
+    wrap.innerHTML = '<p class="hint">Sin topes definidos. Pulsa "⚙️ Configurar" para fijar límites mensuales.</p>';
+    return;
+  }
+
+  const periodTxs = getPeriodTransactions().filter((t) => t.type === 'egreso');
+  const spentByCat = new Map();
+  periodTxs.forEach((t) => {
+    spentByCat.set(t.categoryId, (spentByCat.get(t.categoryId) || 0) + t.amount);
+  });
+
+  wrap.innerHTML = budgeted
+    .map((cat) => {
+      const spent = spentByCat.get(cat.id) || 0;
+      const limit = Number(cat.budget);
+      const pct = (spent / limit) * 100;
+      const fillCls = pct >= 100 ? 'danger' : pct >= 80 ? 'warn' : '';
+      return `
+        <div class="budget-item">
+          <div class="budget-item-top">
+            <span>${cat.icon} <strong>${escapeHtml(cat.name)}</strong></span>
+            <span class="budget-nums">${formatMoney(spent)} / ${formatMoney(limit)} (${pct.toFixed(0)}%)</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill ${fillCls}" style="width:${Math.min(100, pct).toFixed(1)}%;"></div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+// Movimientos recurrentes / fijos
+function applyRecurringItem(rec) {
+  const today = todayISO();
+  const currentYM = today.slice(0, 7);
+  state.transactions.push({
+    id: uid('tx'),
+    type: rec.type,
+    amount: rec.amount,
+    date: today,
+    categoryId: rec.categoryId,
+    accountId: rec.accountId,
+    note: rec.note,
+  });
+  rec.lastAppliedMonth = currentYM;
+}
+
+document.getElementById('btnApplyAllRecurring').addEventListener('click', () => {
+  const currentYM = todayISO().slice(0, 7);
+  const pending = state.recurring.filter((r) => r.lastAppliedMonth !== currentYM);
+  if (pending.length === 0) {
+    showToast('Todos los movimientos fijos ya están aplicados este mes');
+    return;
+  }
+  pending.forEach(applyRecurringItem);
+  saveState();
+  renderAccounts();
+  renderRecurring();
+  renderTracker();
+  showToast(`${pending.length} movimiento(s) fijo(s) aplicado(s)`);
+});
+
+function renderRecurring() {
+  const wrap = document.getElementById('recurringList');
+  if (state.recurring.length === 0) {
+    wrap.innerHTML = '<p class="hint">Marca "Guardar como fijo mensual" al registrar un movimiento para verlo aquí.</p>';
+    return;
+  }
+
+  const currentYM = todayISO().slice(0, 7);
+  wrap.innerHTML = state.recurring
+    .map((r) => {
+      const cat = getCategoryById(r.categoryId);
+      const acc = getAccountById(r.accountId);
+      const applied = r.lastAppliedMonth === currentYM;
+      const sign = r.type === 'ingreso' ? '+' : '-';
+      const cls = r.type === 'ingreso' ? 'amount-pos' : 'amount-neg';
+      return `
+        <div class="recurring-item">
+          <div class="recurring-info">
+            <span class="recurring-title">${cat.icon} ${escapeHtml(r.note || cat.name)}</span>
+            <span class="recurring-sub">${acc.icon} ${escapeHtml(acc.name)} · <span class="${cls}">${sign}${formatMoney(r.amount)}</span></span>
+          </div>
+          <div class="recurring-actions">
+            <button type="button" class="btn ${applied ? 'btn-ghost' : 'btn-secondary'} btn-xs" data-apply-rec="${r.id}">
+              ${applied ? '✓ Mes listo' : '⚡ Aplicar'}
+            </button>
+            <button type="button" class="icon-btn del" data-del-rec="${r.id}" title="Eliminar fijo">🗑️</button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  wrap.querySelectorAll('[data-apply-rec]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const rec = state.recurring.find((x) => x.id === btn.dataset.applyRec);
+      if (!rec) return;
+      applyRecurringItem(rec);
+      saveState();
+      renderAccounts();
+      renderRecurring();
+      renderTracker();
+      showToast(`"${rec.note || 'Fijo'}" registrado hoy`);
+    });
+  });
+
+  wrap.querySelectorAll('[data-del-rec]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.recurring = state.recurring.filter((x) => x.id !== btn.dataset.delRec);
+      saveState();
+      renderRecurring();
+      showToast('Movimiento fijo eliminado');
+    });
+  });
 }
 
 // Filtros del Tracker
@@ -504,8 +781,11 @@ function getPeriodTransactions() {
     : state.transactions.filter((t) => t.date.startsWith(period));
 }
 
+let lastFilteredTransactions = [];
+
 function renderTracker() {
   populateMonthFilter();
+  renderBudgets();
   const periodTxs = getPeriodTransactions();
 
   let totalIng = 0;
@@ -517,7 +797,7 @@ function renderTracker() {
     if (t.type === 'ingreso') {
       totalIng += t.amount;
       countIng += 1;
-    } else {
+    } else if (t.type === 'egreso') {
       totalEgr += t.amount;
       countEgr += 1;
     }
@@ -566,14 +846,15 @@ function renderTracker() {
         .join('')
     : '<span class="hint">Sin movimientos en este período</span>';
 
-  // Gráfico de barras últimos 6 meses
+  // Gráfico de barras últimos 6 meses (excluyendo transferencias)
   const monthMap = new Map();
   state.transactions.forEach((t) => {
+    if (t.type === 'transferencia') return;
     const ym = t.date.slice(0, 7);
     if (!monthMap.has(ym)) monthMap.set(ym, { ym, ingresos: 0, egresos: 0 });
     const entry = monthMap.get(ym);
     if (t.type === 'ingreso') entry.ingresos += t.amount;
-    else entry.egresos += t.amount;
+    else if (t.type === 'egreso') entry.egresos += t.amount;
   });
   const monthsData = [...monthMap.values()]
     .sort((a, b) => a.ym.localeCompare(b.ym))
@@ -592,9 +873,15 @@ function renderTracker() {
   const filtered = periodTxs
     .filter((t) => (typeFilter === 'all' ? true : t.type === typeFilter))
     .filter((t) => (catFilter === 'all' ? true : t.categoryId === catFilter))
-    .filter((t) => (accFilter === 'all' ? true : (t.accountId || fallbackAccId) === accFilter))
+    .filter((t) =>
+      accFilter === 'all'
+        ? true
+        : (t.accountId || fallbackAccId) === accFilter || (t.type === 'transferencia' && t.toAccountId === accFilter)
+    )
     .filter((t) => (!search ? true : (t.note || '').toLowerCase().includes(search)))
     .sort((a, b) => b.date.localeCompare(a.date));
+
+  lastFilteredTransactions = filtered;
 
   const tbody = document.getElementById('txTableBody');
   const mobileList = document.getElementById('txMobileList');
@@ -610,8 +897,24 @@ function renderTracker() {
   emptyEl.classList.add('hidden');
   tbody.innerHTML = filtered
     .map((t) => {
-      const cat = getCategoryById(t.categoryId);
       const acc = getAccountById(t.accountId);
+      if (t.type === 'transferencia') {
+        const toAcc = getAccountById(t.toAccountId);
+        return `
+          <tr>
+            <td>${t.date}</td>
+            <td><span class="badge badge-moderado">🔄 Transferencia</span></td>
+            <td><span class="badge">${acc.icon} ${escapeHtml(acc.name)} → ${toAcc.icon} ${escapeHtml(toAcc.name)}</span></td>
+            <td>${escapeHtml(t.note || '—')}</td>
+            <td class="num amount-transfer">${formatMoney(t.amount)}</td>
+            <td class="actions-col">
+              <button type="button" class="icon-btn" data-edit-tx="${t.id}" title="Editar">✏️</button>
+              <button type="button" class="icon-btn del" data-del-tx="${t.id}" title="Eliminar">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }
+      const cat = getCategoryById(t.categoryId);
       const cls = t.type === 'ingreso' ? 'amount-pos' : 'amount-neg';
       const sign = t.type === 'ingreso' ? '+' : '-';
       return `
@@ -633,8 +936,27 @@ function renderTracker() {
   if (mobileList) {
     mobileList.innerHTML = filtered
       .map((t) => {
-        const cat = getCategoryById(t.categoryId);
         const acc = getAccountById(t.accountId);
+        if (t.type === 'transferencia') {
+          const toAcc = getAccountById(t.toAccountId);
+          return `
+            <div class="wallet-item">
+              <div class="wallet-avatar" style="background:rgba(27,67,50,0.12); color:#1b4332">🔄</div>
+              <div class="wallet-main">
+                <div class="wallet-title">${escapeHtml(t.note || 'Transferencia')}</div>
+                <div class="wallet-sub">${acc.icon} ${escapeHtml(acc.name)} → ${toAcc.icon} ${escapeHtml(toAcc.name)} · ${t.date}</div>
+              </div>
+              <div class="wallet-right">
+                <div class="wallet-amount amount-transfer">${formatMoney(t.amount)}</div>
+                <div class="wallet-actions">
+                  <button type="button" data-edit-tx="${t.id}" aria-label="Editar">Editar</button>
+                  <button type="button" data-del-tx="${t.id}" aria-label="Eliminar">Eliminar</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        const cat = getCategoryById(t.categoryId);
         const cls = t.type === 'ingreso' ? 'amount-pos' : 'amount-neg';
         const sign = t.type === 'ingreso' ? '+' : '-';
         const title = t.note ? escapeHtml(t.note) : cat.name;
@@ -662,10 +984,9 @@ function renderTracker() {
     btn.addEventListener('click', () => {
       const tx = state.transactions.find((x) => x.id === btn.dataset.editTx);
       if (!tx) return;
-      currentTxType = tx.type;
-      document.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('active', b.dataset.type === tx.type));
-      populateTxCategorySelect(tx.categoryId);
-      populateAccountSelects(tx.accountId || fallbackAccId);
+      setTxTypeUI(tx.type);
+      if (tx.type !== 'transferencia') populateTxCategorySelect(tx.categoryId);
+      populateAccountSelects(tx.accountId || fallbackAccId, tx.toAccountId || null);
       document.getElementById('txId').value = tx.id;
       document.getElementById('txAmount').value = tx.amount;
       document.getElementById('txDate').value = tx.date;
@@ -1390,11 +1711,37 @@ document.getElementById('btnMobileTheme').addEventListener('click', () => {
 
 applyTheme(getPreferredTheme());
 
+// Exportar movimientos filtrados a CSV (UTF-8 BOM para Excel)
+document.getElementById('btnExportCsv').addEventListener('click', () => {
+  if (!lastFilteredTransactions.length) {
+    showToast('No hay movimientos filtrados para exportar');
+    return;
+  }
+  const csvEscape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const headers = ['Fecha', 'Tipo', 'Categoria', 'Cuenta', 'Cuenta Destino', 'Descripcion', 'Monto'];
+  const rows = lastFilteredTransactions.map((t) => {
+    const acc = getAccountById(t.accountId);
+    const cat = t.type === 'transferencia' ? { name: 'Transferencia' } : getCategoryById(t.categoryId);
+    const toAcc = t.type === 'transferencia' ? getAccountById(t.toAccountId).name : '';
+    return [t.date, t.type, cat.name, acc.name, toAcc, t.note || '', t.amount].map(csvEscape).join(',');
+  });
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `finanzasflow-movimientos-${todayISO()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`CSV exportado (${lastFilteredTransactions.length} movimientos)`);
+});
+
 function renderAll() {
   renderCategories();
   populateTxCategorySelect();
   populateAccountSelects();
   renderAccounts();
+  renderRecurring();
   renderTracker();
   updateInstrumentPanels();
   computeAndRenderProjection();
