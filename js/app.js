@@ -1852,7 +1852,7 @@ function updateAuthUI(user) {
     });
   } else {
     deskTitle.textContent = 'Iniciar sesión';
-    deskSub.textContent = 'Sincroniza iPhone y PC';
+    deskSub.textContent = 'Sincroniza tus dispositivos';
     deskAvatar.textContent = '☁️';
     deskAvatar.classList.remove('synced');
     document.querySelectorAll('.mobile-auth-icon').forEach((el) => {
