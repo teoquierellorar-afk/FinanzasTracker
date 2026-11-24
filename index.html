@@ -77,6 +77,14 @@
 
       <!-- Controles globales (Desktop Sidebar Footer) -->
       <div class="sidebar-footer">
+        <button type="button" id="btnAccountDesktop" class="cloud-account-btn" data-open-auth>
+          <span class="cloud-avatar" id="desktopAuthAvatar">☁️</span>
+          <span class="cloud-meta">
+            <strong id="desktopAuthTitle">Iniciar sesión</strong>
+            <small id="desktopAuthSub">Sincroniza iPhone y PC</small>
+          </span>
+        </button>
+
         <div class="inset-group compact-group">
           <label class="inset-row">
             <span>Moneda</span>
@@ -119,11 +127,16 @@
               <p class="page-sub">Ingresos, egresos y capacidad de ahorro por categoría.</p>
             </div>
           </div>
-          <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
+          <div class="mobile-header-actions">
+            <button type="button" class="mobile-more-btn" data-open-auth aria-label="Cuenta y sincronización">
+              <span class="mobile-auth-icon">☁️</span>
+            </button>
+            <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
+          </div>
         </header>
 
         <section class="kpi-grid">
@@ -416,11 +429,16 @@
             <h2 class="ios-large-title">Proyector</h2>
             <p class="page-sub">Simula Cajitas, CDTs y Fondos con aportes diarios, semanales o mensuales.</p>
           </div>
-          <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
+          <div class="mobile-header-actions">
+            <button type="button" class="mobile-more-btn" data-open-auth aria-label="Cuenta y sincronización">
+              <span class="mobile-auth-icon">☁️</span>
+            </button>
+            <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
+          </div>
         </header>
 
         <div class="proyector-layout">
@@ -637,11 +655,16 @@
             <h2 class="ios-large-title">Portafolio</h2>
             <p class="page-sub">Compara Cajitas, CDTs y Fondos guardados lado a lado.</p>
           </div>
-          <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
+          <div class="mobile-header-actions">
+            <button type="button" class="mobile-more-btn" data-open-auth aria-label="Cuenta y sincronización">
+              <span class="mobile-auth-icon">☁️</span>
+            </button>
+            <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
+          </div>
         </header>
 
         <section class="kpi-grid">
@@ -705,11 +728,16 @@
             <h2 class="ios-large-title">Predictor</h2>
             <p class="page-sub">Viabilidad BVC, acciones y ETFs con 300 simulaciones Monte Carlo.</p>
           </div>
-          <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
+          <div class="mobile-header-actions">
+            <button type="button" class="mobile-more-btn" data-open-auth aria-label="Cuenta y sincronización">
+              <span class="mobile-auth-icon">☁️</span>
+            </button>
+            <button type="button" class="mobile-more-btn" data-open-menu aria-label="Ajustes y acciones">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
+          </div>
         </header>
 
         <div class="proyector-layout">
@@ -908,6 +936,9 @@
       <button type="button" id="btnCloseMobileSheet" class="btn-close-sheet" aria-label="Cerrar">✕</button>
     </div>
     <div class="inset-group" style="margin-bottom: 12px;">
+      <button type="button" id="btnMobileAuth" class="inset-action">☁️ Cuenta y sincronización en la nube</button>
+    </div>
+    <div class="inset-group" style="margin-bottom: 12px;">
       <label class="inset-row">
         <span>Moneda</span>
         <select id="mobileCurrencySelect" class="inset-select">
@@ -923,6 +954,73 @@
       <button type="button" id="btnMobileDemo" class="inset-action">✨ Cargar datos de ejemplo (Demo)</button>
       <button type="button" id="btnMobileExport" class="inset-action">⬇️ Exportar respaldo JSON</button>
       <button type="button" id="btnMobileImport" class="inset-action">⬆️ Importar respaldo JSON</button>
+    </div>
+  </div>
+
+  <!-- Modal iOS de Login / Sincronización Supabase -->
+  <div id="authModalBackdrop" class="sheet-backdrop hidden"></div>
+  <div id="authModal" class="auth-modal hidden" role="dialog" aria-modal="true" aria-label="Cuenta y sincronización">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="card-header">
+      <div class="header-title-wrap">
+        <img src="logo.svg" alt="FinanzasFlow" width="30" height="30" style="border-radius:8px;" />
+        <div>
+          <h3 id="authModalTitle">Cuenta FinanzasFlow</h3>
+          <p class="hint" id="authModalSub">Sincroniza tus datos entre iPhone y PC</p>
+        </div>
+      </div>
+      <button type="button" id="btnCloseAuthModal" class="btn-close-sheet" style="display:grid;" aria-label="Cerrar">✕</button>
+    </div>
+
+    <!-- Vista cuando NO hay sesión -->
+    <div id="authSignedOutView" class="form-grid">
+      <div class="type-toggle" id="authMethodToggle" role="group" aria-label="Método de acceso">
+        <button type="button" class="type-btn active" data-auth-method="password">Contraseña</button>
+        <button type="button" class="type-btn" data-auth-method="magic">Magic Link</button>
+      </div>
+
+      <form id="authForm" class="form-grid">
+        <div class="inset-group">
+          <label class="inset-row">
+            <span>Correo</span>
+            <input type="email" id="authEmail" placeholder="tu@correo.com" required autocomplete="email" class="inset-input" />
+          </label>
+          <label class="inset-row" id="authPasswordRow">
+            <span>Contraseña</span>
+            <input type="password" id="authPassword" placeholder="Mínimo 6 caracteres" minlength="6" autocomplete="current-password" class="inset-input" />
+          </label>
+        </div>
+
+        <p id="authFeedback" class="auth-feedback hidden"></p>
+
+        <div id="authPasswordBtns" class="btn-row">
+          <button type="submit" id="btnAuthSignIn" class="btn btn-primary">Iniciar sesión</button>
+          <button type="button" id="btnAuthSignUp" class="btn btn-secondary">Crear cuenta</button>
+        </div>
+
+        <button type="submit" id="btnAuthMagic" class="btn btn-primary hidden">✉️ Enviar enlace mágico</button>
+      </form>
+
+      <button type="button" id="btnContinueLocal" class="btn btn-ghost btn-sm">Seguir sin cuenta (solo este dispositivo)</button>
+    </div>
+
+    <!-- Vista cuando SÍ hay sesión -->
+    <div id="authSignedInView" class="form-grid hidden">
+      <div class="inset-group">
+        <div class="inset-row">
+          <span>Usuario</span>
+          <strong id="authUserEmail" style="font-size:13.5px; color:var(--text);">—</strong>
+        </div>
+        <div class="inset-row">
+          <span>Estado</span>
+          <span class="badge badge-alto" id="authSyncStatusBadge">☁️ Sincronizado</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" id="btnForceSync" class="btn btn-secondary">🔄 Sincronizar ahora</button>
+        <button type="button" id="btnSignOut" class="btn btn-danger-soft">Cerrar sesión</button>
+      </div>
     </div>
   </div>
 

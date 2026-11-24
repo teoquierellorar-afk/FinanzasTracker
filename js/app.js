@@ -1,5 +1,14 @@
 import { runProjection, solveRequiredContribution, evaluateMarketViability, runMonteCarloProjection } from './finance.js';
 import { drawDonutChart, drawMonthlyBarChart, drawGrowthChart, drawMonteCarloChart } from './charts.js';
+import {
+  initSupabaseAuth,
+  signInWithPassword,
+  signUpWithPassword,
+  signInWithMagicLink,
+  signOutUser,
+  fetchCloudFinances,
+  saveCloudFinances,
+} from './supabaseSync.js';
 
 const STORAGE_KEY = 'finanzasflow_v1';
 
@@ -68,12 +77,18 @@ function loadState() {
 let state = loadState();
 let currentTxType = 'egreso';
 let lastProjectionResult = null;
+let currentUser = null;
+let isApplyingCloudState = false;
+let cloudSaveTimer = null;
 
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     // Ignorar errores de cuota o modo privado en Safari
+  }
+  if (currentUser && !isApplyingCloudState) {
+    scheduleCloudSave();
   }
 }
 
@@ -1734,6 +1749,296 @@ document.getElementById('btnExportCsv').addEventListener('click', () => {
   a.click();
   URL.revokeObjectURL(url);
   showToast(`CSV exportado (${lastFilteredTransactions.length} movimientos)`);
+});
+
+/* ==================== SUPABASE AUTH & CLOUD SYNC ==================== */
+let authMethod = 'password';
+let lastSyncedUserId = null;
+
+const authModal = document.getElementById('authModal');
+const authModalBackdrop = document.getElementById('authModalBackdrop');
+
+function openAuthModal() {
+  clearAuthFeedback();
+  authModal.classList.remove('hidden');
+  authModalBackdrop.classList.remove('hidden');
+}
+
+function closeAuthModal() {
+  authModal.classList.add('hidden');
+  authModalBackdrop.classList.add('hidden');
+}
+
+document.querySelectorAll('[data-open-auth]').forEach((btn) => {
+  btn.addEventListener('click', openAuthModal);
+});
+
+document.getElementById('btnMobileAuth').addEventListener('click', () => {
+  closeMobileMenu();
+  openAuthModal();
+});
+
+document.getElementById('btnCloseAuthModal').addEventListener('click', closeAuthModal);
+document.getElementById('btnContinueLocal').addEventListener('click', closeAuthModal);
+authModalBackdrop.addEventListener('click', closeAuthModal);
+
+document.querySelectorAll('#authMethodToggle [data-auth-method]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    authMethod = btn.dataset.authMethod;
+    document.querySelectorAll('#authMethodToggle [data-auth-method]').forEach((b) => {
+      b.classList.toggle('active', b === btn);
+    });
+    const isMagic = authMethod === 'magic';
+    document.getElementById('authPasswordRow').classList.toggle('hidden', isMagic);
+    document.getElementById('authPassword').required = !isMagic;
+    document.getElementById('authPasswordBtns').classList.toggle('hidden', isMagic);
+    document.getElementById('btnAuthMagic').classList.toggle('hidden', !isMagic);
+    clearAuthFeedback();
+  });
+});
+
+function showAuthFeedback(msg, isError = false) {
+  const el = document.getElementById('authFeedback');
+  el.textContent = msg;
+  el.className = `auth-feedback ${isError ? 'err' : 'ok'}`;
+}
+
+function clearAuthFeedback() {
+  const el = document.getElementById('authFeedback');
+  el.textContent = '';
+  el.className = 'auth-feedback hidden';
+}
+
+function translateAuthError(err) {
+  const msg = String(err?.message || err || '');
+  if (/invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos.';
+  if (/email not confirmed/i.test(msg)) return 'Confirma tu correo antes de iniciar sesión (revisa tu bandeja).';
+  if (/user already registered/i.test(msg)) return 'Este correo ya está registrado. Intenta iniciar sesión.';
+  if (/password should be at least/i.test(msg)) return 'La contraseña debe tener al menos 6 caracteres.';
+  if (/rate limit|too many requests/i.test(msg)) return 'Demasiados intentos seguidos. Espera un momento e intenta de nuevo.';
+  return msg || 'Ocurrió un error al autenticar.';
+}
+
+function setSyncStatus(text, level = 'alto') {
+  const badge = document.getElementById('authSyncStatusBadge');
+  if (badge) {
+    badge.textContent = text;
+    badge.className = `badge badge-${level}`;
+  }
+  const deskSub = document.getElementById('desktopAuthSub');
+  if (deskSub && currentUser) {
+    deskSub.textContent = text;
+  }
+}
+
+function updateAuthUI(user) {
+  const isLogged = Boolean(user);
+  document.getElementById('authSignedOutView').classList.toggle('hidden', isLogged);
+  document.getElementById('authSignedInView').classList.toggle('hidden', !isLogged);
+
+  const deskTitle = document.getElementById('desktopAuthTitle');
+  const deskSub = document.getElementById('desktopAuthSub');
+  const deskAvatar = document.getElementById('desktopAuthAvatar');
+
+  if (isLogged) {
+    const email = user.email || 'Usuario';
+    deskTitle.textContent = email;
+    deskSub.textContent = '☁️ Sincronizado';
+    deskAvatar.textContent = '✓';
+    deskAvatar.classList.add('synced');
+    document.getElementById('authUserEmail').textContent = email;
+    document.querySelectorAll('.mobile-auth-icon').forEach((el) => {
+      el.textContent = '✓';
+    });
+  } else {
+    deskTitle.textContent = 'Iniciar sesión';
+    deskSub.textContent = 'Sincroniza iPhone y PC';
+    deskAvatar.textContent = '☁️';
+    deskAvatar.classList.remove('synced');
+    document.querySelectorAll('.mobile-auth-icon').forEach((el) => {
+      el.textContent = '☁️';
+    });
+  }
+}
+
+function hasMeaningfulData(s) {
+  if (!s || typeof s !== 'object') return false;
+  if (Array.isArray(s.transactions) && s.transactions.length > 0) return true;
+  if (Array.isArray(s.scenarios) && s.scenarios.length > 0) return true;
+  if (Array.isArray(s.recurring) && s.recurring.length > 0) return true;
+  if (Array.isArray(s.accounts) && (s.accounts.length !== DEFAULT_ACCOUNTS.length || s.accounts.some((a) => Number(a.initial) !== 0))) return true;
+  if (Array.isArray(s.categories) && s.categories.length !== DEFAULT_CATEGORIES.length) return true;
+  return false;
+}
+
+function normalizeState(raw) {
+  return {
+    currency: raw?.currency || 'COP',
+    categories: Array.isArray(raw?.categories) && raw.categories.length ? raw.categories : [...DEFAULT_CATEGORIES],
+    accounts: Array.isArray(raw?.accounts) && raw.accounts.length ? raw.accounts : [...DEFAULT_ACCOUNTS],
+    transactions: Array.isArray(raw?.transactions) ? raw.transactions : [],
+    recurring: Array.isArray(raw?.recurring) ? raw.recurring : [],
+    scenarios: Array.isArray(raw?.scenarios) ? raw.scenarios : [],
+  };
+}
+
+let lastCloudSyncAt = 0;
+
+async function syncWithCloudOnLogin(user, silent = false) {
+  if (!user) return;
+  setSyncStatus('⏳ Sincronizando...', 'moderado');
+  try {
+    const cloudRow = await fetchCloudFinances(user.id);
+    if (cloudRow?.state && (hasMeaningfulData(cloudRow.state) || !hasMeaningfulData(state))) {
+      isApplyingCloudState = true;
+      state = normalizeState(cloudRow.state);
+      currencySelect.value = state.currency;
+      mobileCurrencySelect.value = state.currency;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        // Ignorar en modo privado
+      }
+      renderAll();
+      isApplyingCloudState = false;
+      lastCloudSyncAt = Date.now();
+      setSyncStatus('☁️ Sincronizado', 'alto');
+      if (!silent) showToast('Datos sincronizados desde tu cuenta');
+    } else {
+      const hadLocal = hasMeaningfulData(state);
+      await saveCloudFinances(user.id, state);
+      lastCloudSyncAt = Date.now();
+      setSyncStatus('☁️ Sincronizado', 'alto');
+      if (!silent) showToast(hadLocal ? 'Tus datos locales se subieron a la nube' : 'Sincronización en la nube activada');
+    }
+  } catch (err) {
+    isApplyingCloudState = false;
+    setSyncStatus('⚠️ Error al sincronizar', 'bajo');
+    console.warn('Error sincronizando con Supabase:', err);
+  }
+}
+
+function scheduleCloudSave() {
+  if (!currentUser) return;
+  setSyncStatus('⏳ Guardando...', 'moderado');
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(async () => {
+    cloudSaveTimer = null;
+    if (!currentUser) return;
+    try {
+      await saveCloudFinances(currentUser.id, state);
+      lastCloudSyncAt = Date.now();
+      setSyncStatus('☁️ Sincronizado', 'alto');
+    } catch (err) {
+      setSyncStatus('⚠️ Sin conexión (guardado local)', 'bajo');
+      console.warn('Error guardando en Supabase:', err);
+    }
+  }, 500);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (
+    document.visibilityState === 'visible' &&
+    currentUser &&
+    !cloudSaveTimer &&
+    Date.now() - lastCloudSyncAt > 15000
+  ) {
+    syncWithCloudOnLogin(currentUser, true);
+  }
+});
+
+document.getElementById('authForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAuthFeedback();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email) return;
+
+  try {
+    if (authMethod === 'magic') {
+      const btn = document.getElementById('btnAuthMagic');
+      btn.disabled = true;
+      btn.textContent = '⏳ Enviando...';
+      await signInWithMagicLink(email);
+      showAuthFeedback('✉️ Te enviamos un enlace mágico a tu correo. Ábrelo desde este dispositivo para entrar.', false);
+      btn.disabled = false;
+      btn.textContent = '✉️ Enviar enlace mágico';
+    } else {
+      if (!password || password.length < 6) {
+        showAuthFeedback('Ingresa una contraseña de al menos 6 caracteres.', true);
+        return;
+      }
+      const btn = document.getElementById('btnAuthSignIn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Entrando...';
+      await signInWithPassword(email, password);
+      btn.disabled = false;
+      btn.textContent = 'Iniciar sesión';
+      closeAuthModal();
+    }
+  } catch (err) {
+    document.getElementById('btnAuthMagic').disabled = false;
+    document.getElementById('btnAuthMagic').textContent = '✉️ Enviar enlace mágico';
+    document.getElementById('btnAuthSignIn').disabled = false;
+    document.getElementById('btnAuthSignIn').textContent = 'Iniciar sesión';
+    showAuthFeedback(translateAuthError(err), true);
+  }
+});
+
+document.getElementById('btnAuthSignUp').addEventListener('click', async () => {
+  clearAuthFeedback();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email || !password || password.length < 6) {
+    showAuthFeedback('Escribe tu correo y una contraseña de al menos 6 caracteres para crear la cuenta.', true);
+    return;
+  }
+  const btn = document.getElementById('btnAuthSignUp');
+  btn.disabled = true;
+  btn.textContent = '⏳ Creando...';
+  try {
+    const data = await signUpWithPassword(email, password);
+    if (data?.session) {
+      closeAuthModal();
+    } else {
+      showAuthFeedback('✅ Cuenta creada. Revisa tu correo para confirmar y activar el acceso.', false);
+    }
+  } catch (err) {
+    showAuthFeedback(translateAuthError(err), true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Crear cuenta';
+  }
+});
+
+document.getElementById('btnForceSync').addEventListener('click', async () => {
+  if (!currentUser) return;
+  await syncWithCloudOnLogin(currentUser);
+});
+
+document.getElementById('btnSignOut').addEventListener('click', async () => {
+  try {
+    await signOutUser();
+    lastSyncedUserId = null;
+    currentUser = null;
+    updateAuthUI(null);
+    closeAuthModal();
+    showToast('Sesión cerrada (modo local activo)');
+  } catch (err) {
+    showToast(translateAuthError(err));
+  }
+});
+
+initSupabaseAuth(async (user) => {
+  currentUser = user;
+  updateAuthUI(user);
+  if (user && user.id !== lastSyncedUserId) {
+    lastSyncedUserId = user.id;
+    closeAuthModal();
+    await syncWithCloudOnLogin(user);
+  } else if (!user) {
+    lastSyncedUserId = null;
+  }
 });
 
 function renderAll() {

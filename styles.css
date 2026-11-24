@@ -1651,6 +1651,138 @@ input[type="color"] {
   flex-shrink: 0;
 }
 
+/* ==================== AUTH MODAL & CLOUD ACCOUNT ==================== */
+.cloud-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 13px;
+  border: 0.5px solid var(--hairline);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.cloud-account-btn:hover {
+  background: var(--primary-soft);
+}
+
+.cloud-account-btn:active {
+  transform: scale(0.98);
+}
+
+.cloud-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.cloud-avatar.synced {
+  background: var(--positive-soft);
+  color: var(--positive-text);
+}
+
+.cloud-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.cloud-meta strong {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cloud-meta small {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-header-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .mobile-header-actions {
+    display: flex;
+  }
+}
+
+.auth-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  background: var(--bg);
+  border-radius: 22px;
+  padding: 20px;
+  z-index: 220;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: cardSpringIn 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (max-width: 767px) {
+  .auth-modal {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    border-radius: 22px 22px 0 0;
+    padding: 10px 16px calc(24px + env(safe-area-inset-bottom));
+    animation: slideUp 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+}
+
+.auth-feedback {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.auth-feedback.ok {
+  background: var(--positive-soft);
+  color: var(--positive-text);
+}
+
+.auth-feedback.err {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+
+.btn-danger-soft {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+
+.btn-danger-soft:hover {
+  background: rgba(255, 59, 48, 0.2);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
