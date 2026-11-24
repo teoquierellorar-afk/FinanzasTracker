@@ -251,7 +251,14 @@ export function drawMonteCarloChart(canvas, series, mostProbableFinal = null) {
   const chartW = w - padL - padR;
   const chartH = h - padT - padB;
 
-  if (!series || series.length < 2) return;
+  if (!series || series.length < 2) {
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '500 13px -apple-system, Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Configura los indicadores y simula para ver la proyección', w / 2, h / 2);
+    return;
+  }
 
   const maxVal = Math.max(1, ...series.map((s) => Math.max(s.p90, s.rf)), mostProbableFinal || 0);
   const n = series.length;

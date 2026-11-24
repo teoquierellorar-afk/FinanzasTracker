@@ -1045,13 +1045,13 @@ projInstrumentSelect.addEventListener('change', () => {
 function readProjConfig() {
   return {
     name: document.getElementById('projName').value.trim() || 'Escenario sin nombre',
-    instrument: document.getElementById('projInstrument').value,
+    instrument: document.getElementById('projInstrument').value || 'cajita',
     initial: Number(document.getElementById('projInitial').value) || 0,
     rate: Number(document.getElementById('projRate').value) || 0,
     contribution: Number(document.getElementById('projContribution').value) || 0,
-    frequency: document.getElementById('projFrequency').value,
-    horizonVal: Number(document.getElementById('projHorizonVal').value) || 12,
-    horizonUnit: document.getElementById('projHorizonUnit').value,
+    frequency: document.getElementById('projFrequency').value || 'mensual',
+    horizonVal: Number(document.getElementById('projHorizonVal').value) || 0,
+    horizonUnit: document.getElementById('projHorizonUnit').value || 'meses',
     cdtTermDays: Number(document.getElementById('projCdtTermDays').value) || 180,
     taxRate: Number(document.getElementById('projTaxRate').value) || 0,
     cdtReinvest: document.getElementById('projCdtReinvest').checked,
@@ -1062,22 +1062,40 @@ function readProjConfig() {
   };
 }
 
+function hasValidProjectionInputs() {
+  const instrument = document.getElementById('projInstrument').value;
+  const rateRaw = document.getElementById('projRate').value.trim();
+  const freq = document.getElementById('projFrequency').value;
+  const horizonVal = Number(document.getElementById('projHorizonVal').value);
+
+  if (!instrument || rateRaw === '' || !freq || !(horizonVal > 0)) return false;
+
+  if (currentProjMode === 'goal') {
+    const targetGoal = Number(document.getElementById('projTargetGoal').value);
+    return targetGoal > 0;
+  }
+
+  const initial = Number(document.getElementById('projInitial').value) || 0;
+  const contribution = Number(document.getElementById('projContribution').value) || 0;
+  return initial > 0 || (freq !== 'ninguno' && contribution > 0);
+}
+
 function writeProjConfig(cfg) {
-  document.getElementById('projName').value = cfg.name;
-  document.getElementById('projInstrument').value = cfg.instrument;
-  document.getElementById('projInitial').value = cfg.initial;
-  document.getElementById('projRate').value = cfg.rate;
-  document.getElementById('projContribution').value = cfg.contribution;
-  document.getElementById('projFrequency').value = cfg.frequency;
-  document.getElementById('projHorizonVal').value = cfg.horizonVal;
-  document.getElementById('projHorizonUnit').value = cfg.horizonUnit;
-  document.getElementById('projCdtTermDays').value = cfg.cdtTermDays ?? 180;
-  document.getElementById('projTaxRate').value = cfg.taxRate ?? 4;
+  document.getElementById('projName').value = cfg.name ?? '';
+  document.getElementById('projInstrument').value = cfg.instrument ?? '';
+  document.getElementById('projInitial').value = cfg.initial ?? '';
+  document.getElementById('projRate').value = cfg.rate ?? '';
+  document.getElementById('projContribution').value = cfg.contribution ?? '';
+  document.getElementById('projFrequency').value = cfg.frequency ?? '';
+  document.getElementById('projHorizonVal').value = cfg.horizonVal ?? '';
+  document.getElementById('projHorizonUnit').value = cfg.horizonUnit ?? 'meses';
+  document.getElementById('projCdtTermDays').value = cfg.cdtTermDays ?? '';
+  document.getElementById('projTaxRate').value = cfg.taxRate ?? '';
   document.getElementById('projCdtReinvest').checked = cfg.cdtReinvest ?? true;
-  document.getElementById('projFeeRate').value = cfg.feeRate ?? 1.2;
-  document.getElementById('projFondoTax').value = cfg.fondoTax ?? 0;
-  document.getElementById('projInflation').value = cfg.inflation ?? 5;
-  document.getElementById('projContribGrowth').value = cfg.contribGrowth ?? 0;
+  document.getElementById('projFeeRate').value = cfg.feeRate ?? '';
+  document.getElementById('projFondoTax').value = cfg.fondoTax ?? '';
+  document.getElementById('projInflation').value = cfg.inflation ?? '';
+  document.getElementById('projContribGrowth').value = cfg.contribGrowth ?? '';
   updateInstrumentPanels();
 }
 
@@ -1101,6 +1119,37 @@ document.querySelectorAll('#projModeToggle [data-proj-mode]').forEach((btn) => {
 });
 
 function computeAndRenderProjection() {
+  const rawInstrument = document.getElementById('projInstrument').value;
+
+  if (!hasValidProjectionInputs()) {
+    lastProjectionResult = null;
+    document.getElementById('projFinalValue').textContent = '—';
+    document.getElementById('projRealValue').textContent = 'Ingresa tus datos para proyectar';
+    document.getElementById('projTotalInvested').textContent = '—';
+    document.getElementById('projInitialVsContrib').textContent = 'Inicial + aportes';
+    document.getElementById('projNetInterest').textContent = '—';
+    document.getElementById('projMultiplier').textContent = 'Multiplicador: —';
+    document.getElementById('projMonthlyPassive').textContent = '—';
+    document.getElementById('projTaxPaid').textContent = 'Impuestos/com.: —';
+
+    if (currentProjMode === 'goal') {
+      document.getElementById('projRequiredAmount').textContent = '—';
+      const statusBadge = document.getElementById('projGoalStatusBadge');
+      statusBadge.textContent = 'Esperando meta';
+      statusBadge.className = 'badge';
+      document.getElementById('projGoalEquivalents').innerHTML = '';
+      document.getElementById('projGoalTrackerHint').textContent =
+        'Ingresa instrumento, meta objetivo, tasa, frecuencia y horizonte para calcular cuánto ahorrar.';
+    }
+
+    drawGrowthChart(document.getElementById('growthChart'), []);
+    renderProjectionTable();
+    if (rawInstrument === 'fondo') {
+      updateFondoViabilityBox(readProjConfig(), null);
+    }
+    return;
+  }
+
   const cfg = readProjConfig();
   let res;
 
@@ -1133,7 +1182,10 @@ function computeAndRenderProjection() {
     const periodTxs = getPeriodTransactions();
     let ing = 0;
     let egr = 0;
-    periodTxs.forEach((t) => (t.type === 'ingreso' ? (ing += t.amount) : (egr += t.amount)));
+    periodTxs.forEach((t) => {
+      if (t.type === 'ingreso') ing += t.amount;
+      else if (t.type === 'egreso') egr += t.amount;
+    });
     const trackerSavings = Math.max(0, ing - egr);
 
     const statusBadge = document.getElementById('projGoalStatusBadge');
@@ -1180,9 +1232,33 @@ function computeAndRenderProjection() {
 }
 
 function updateFondoViabilityBox(cfg, res) {
+  const badge = document.getElementById('fondoViabilityBadge');
+  const adviceEl = document.getElementById('fondoViabilityAdvice');
+  const modeEl = document.getElementById('fondoModeVal');
+  const rateEl = document.getElementById('fondoSuggestedRate');
+
+  if (!hasMarketIndicators()) {
+    badge.textContent = 'Sin evaluar';
+    badge.className = 'badge';
+    adviceEl.textContent = 'Configura los indicadores en Predictor o sincroniza un activo para ver la viabilidad.';
+    modeEl.textContent = '—';
+    rateEl.textContent = '—';
+    return;
+  }
+
   const params = readMarketParams();
   const evalRes = evaluateMarketViability(params);
   lastMarketEvaluation = evalRes;
+
+  badge.textContent = `${evalRes.score}/100 · ${evalRes.regime}`;
+  badge.className = `badge badge-${evalRes.regimeLevel}`;
+  adviceEl.textContent = evalRes.diagnosis;
+  rateEl.textContent = `${evalRes.expectedReturnEA.toFixed(2)}% E.A. (Asignación: ${evalRes.allocation.fondoPct}%)`;
+
+  if (!res) {
+    modeEl.textContent = 'Ingresa capital y horizonte';
+    return;
+  }
 
   const horizonYears = Math.max(1, Math.round(res.totalDays / 365));
   const netExpectedRate = Math.max(0, evalRes.expectedReturnEA - (cfg.feeRate || 0));
@@ -1196,16 +1272,14 @@ function updateFondoViabilityBox(cfg, res) {
     riskFreeEA: params.riskFree,
   });
 
-  const badge = document.getElementById('fondoViabilityBadge');
-  badge.textContent = `${evalRes.score}/100 · ${evalRes.regime}`;
-  badge.className = `badge badge-${evalRes.regimeLevel}`;
-
-  document.getElementById('fondoViabilityAdvice').textContent = evalRes.diagnosis;
-  document.getElementById('fondoModeVal').textContent = `${formatMoney(mc.mostProbableFinal)} (P10–P90: ${formatMoney(mc.p10Final)} – ${formatMoney(mc.p90Final)})`;
-  document.getElementById('fondoSuggestedRate').textContent = `${evalRes.expectedReturnEA.toFixed(2)}% E.A. (Asignación sugerida: ${evalRes.allocation.fondoPct}%)`;
+  modeEl.textContent = `${formatMoney(mc.mostProbableFinal)} (P10–P90: ${formatMoney(mc.p10Final)} – ${formatMoney(mc.p90Final)})`;
 }
 
 document.getElementById('btnApplySuggestedRate').addEventListener('click', () => {
+  if (!hasMarketIndicators()) {
+    showToast('Primero configura los indicadores o sincroniza un activo en Predictor');
+    return;
+  }
   const evalRes = evaluateMarketViability(readMarketParams());
   document.getElementById('projRate').value = evalRes.expectedReturnEA.toFixed(2);
   computeAndRenderProjection();
@@ -1217,12 +1291,16 @@ document.getElementById('btnOpenPredictor').addEventListener('click', () => {
 });
 
 function renderProjectionTable() {
-  if (!lastProjectionResult) return;
+  const tbody = document.getElementById('projTableBody');
+  if (!lastProjectionResult) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Completa los datos para ver la evolución.</td></tr>';
+    return;
+  }
   const { res } = lastProjectionResult;
   const gran = document.getElementById('projTableGranularity').value;
   const rows = gran === 'anual' ? res.annualRows : res.monthlyRows;
 
-  document.getElementById('projTableBody').innerHTML = rows
+  tbody.innerHTML = rows
     .map(
       (r) => `
       <tr>
@@ -1254,7 +1332,7 @@ document.getElementById('btnUseTrackerSavings').addEventListener('click', () => 
   let egr = 0;
   periodTxs.forEach((t) => {
     if (t.type === 'ingreso') ing += t.amount;
-    else egr += t.amount;
+    else if (t.type === 'egreso') egr += t.amount;
   });
   const avail = Math.max(0, ing - egr);
   if (avail <= 0) {
@@ -1264,11 +1342,19 @@ document.getElementById('btnUseTrackerSavings').addEventListener('click', () => 
   document.getElementById('projContribution').value = Math.round(avail);
   document.getElementById('projFrequency').value = 'mensual';
   computeAndRenderProjection();
-  showToast(`Aporte mensual actualizado con tu balance (${formatMoney(avail)})`);
+  showToast(
+    hasValidProjectionInputs()
+      ? `Aporte mensual actualizado con tu balance (${formatMoney(avail)})`
+      : `Aporte mensual (${formatMoney(avail)}) cargado; completa instrumento, tasa y horizonte`
+  );
 });
 
 document.getElementById('btnSaveScenario').addEventListener('click', () => {
-  const cfg = lastProjectionResult?.cfg ? { ...lastProjectionResult.cfg } : readProjConfig();
+  if (!lastProjectionResult?.cfg) {
+    showToast('Completa los datos de la proyección antes de guardar');
+    return;
+  }
+  const cfg = { ...lastProjectionResult.cfg };
   state.scenarios.push({ id: uid('sc'), ...cfg });
   saveState();
   renderComparator();
@@ -1285,7 +1371,8 @@ const INSTRUMENT_LABELS = {
 function renderComparator() {
   const tbody = document.getElementById('compTableBody');
   const empty = document.getElementById('compEmptyState');
-  const marketEval = evaluateMarketViability(readMarketParams());
+  const hasMkt = hasMarketIndicators();
+  const marketEval = hasMkt ? evaluateMarketViability(readMarketParams()) : null;
 
   let sumInvested = 0;
   let sumFinal = 0;
@@ -1304,7 +1391,7 @@ function renderComparator() {
           : `${formatMoney(sc.contribution)} / ${sc.frequency}`;
 
       const viabilityTag =
-        sc.instrument === 'fondo'
+        sc.instrument === 'fondo' && marketEval
           ? ` <span class="badge badge-${marketEval.regimeLevel}" title="${escapeHtml(marketEval.diagnosis)}">🔮 ${marketEval.score}/100</span>`
           : '';
 
@@ -1424,6 +1511,15 @@ const MKT_PRESETS = {
 let lastMarketEvaluation = null;
 
 document.getElementById('mktPreset').addEventListener('change', (e) => {
+  if (!e.target.value) {
+    document.getElementById('mktTrend').value = '';
+    document.getElementById('mktVolatility').value = '';
+    document.getElementById('mktValuation').value = '';
+    document.getElementById('mktLiquidity').value = '';
+    document.getElementById('mktRiskFree').value = '';
+    renderPredictor();
+    return;
+  }
   const preset = MKT_PRESETS[e.target.value];
   if (!preset) return;
   document.getElementById('mktTrend').value = preset.trend;
@@ -1452,6 +1548,25 @@ document.getElementById('mktForm').addEventListener('input', () => {
   renderPredictor();
 });
 
+function hasMarketIndicators() {
+  const trend = document.getElementById('mktTrend').value;
+  const volatility = document.getElementById('mktVolatility').value;
+  const valuation = document.getElementById('mktValuation').value;
+  const liquidity = document.getElementById('mktLiquidity').value;
+  const riskFreeRaw = document.getElementById('mktRiskFree').value.trim();
+  return Boolean(trend && volatility && valuation && liquidity && riskFreeRaw !== '');
+}
+
+function hasMonteCarloInputs() {
+  if (!hasMarketIndicators()) return false;
+  const initial = Number(document.getElementById('mktInitial').value) || 0;
+  const contribution = Number(document.getElementById('mktContribution').value) || 0;
+  const frequency = document.getElementById('mktFrequency').value;
+  const horizonYears = Number(document.getElementById('mktHorizonYears').value) || 0;
+  if (!frequency || !(horizonYears > 0)) return false;
+  return initial > 0 || (frequency !== 'ninguno' && contribution > 0);
+}
+
 function readMarketParams() {
   return {
     trend: document.getElementById('mktTrend').value,
@@ -1459,30 +1574,38 @@ function readMarketParams() {
     valuation: document.getElementById('mktValuation').value,
     liquidity: document.getElementById('mktLiquidity').value,
     riskFree: Number(document.getElementById('mktRiskFree').value) || 0,
-    riskProfile: document.getElementById('mktRiskProfile').value,
+    riskProfile: document.getElementById('mktRiskProfile').value || 'moderado',
   };
 }
 
 function renderPredictor() {
-  const params = readMarketParams();
+  if (!hasMarketIndicators()) {
+    lastMarketEvaluation = null;
+    const scoreEl = document.getElementById('mktScoreVal');
+    scoreEl.textContent = '—';
+    scoreEl.className = 'kpi-value';
+    document.getElementById('mktRegimeBadge').textContent = 'Sin calcular';
+    document.getElementById('mktReturnVol').textContent = '—';
+    document.getElementById('mktSharpeMeta').textContent = 'Completa los indicadores';
+    document.getElementById('mktModeVal').textContent = '—';
+    document.getElementById('mktMedianSub').textContent = 'Mediana P50: —';
+    document.getElementById('mktRangeMeta').textContent = 'P10–P90: —';
+    const probEl = document.getElementById('mktBeatProb');
+    probEl.textContent = '—';
+    probEl.className = 'kpi-value';
+    document.getElementById('mktDrawdownMeta').textContent = 'Drawdown est.: —';
+    drawMonteCarloChart(document.getElementById('monteCarloChart'), []);
+    document.getElementById('mktStrategyTag').textContent = 'Sin simular';
+    document.getElementById('mktAllocBar').innerHTML = '';
+    document.getElementById('mktAllocLegend').innerHTML = '';
+    document.getElementById('mktDiagnosisText').textContent =
+      'Configura los indicadores o sincroniza un activo para ver el diagnóstico.';
+    return;
+  }
 
+  const params = readMarketParams();
   const evalRes = evaluateMarketViability(params);
   lastMarketEvaluation = evalRes;
-
-  const initial = Number(document.getElementById('mktInitial').value) || 0;
-  const contribution = Number(document.getElementById('mktContribution').value) || 0;
-  const frequency = document.getElementById('mktFrequency').value;
-  const horizonYears = Number(document.getElementById('mktHorizonYears').value) || 5;
-
-  const mc = runMonteCarloProjection({
-    initial,
-    contribution,
-    frequency,
-    horizonYears,
-    expectedReturnEA: evalRes.expectedReturnEA,
-    annualVolatility: evalRes.annualVolatility,
-    riskFreeEA: params.riskFree,
-  });
 
   const scoreEl = document.getElementById('mktScoreVal');
   scoreEl.textContent = `${evalRes.score} / 100`;
@@ -1494,6 +1617,48 @@ function renderPredictor() {
   document.getElementById('mktReturnVol').textContent = `${evalRes.expectedReturnEA.toFixed(1)}% / ±${evalRes.annualVolatility}%`;
   document.getElementById('mktSharpeMeta').textContent = `Prima vs Renta Fija: ${evalRes.equityPremium >= 0 ? '+' : ''}${evalRes.equityPremium.toFixed(1)}%`;
 
+  // Asignación sugerida
+  const { cajitaPct, cdtPct, fondoPct } = evalRes.allocation;
+  document.getElementById('mktStrategyTag').textContent = evalRes.strategyTag;
+  document.getElementById('mktAllocBar').innerHTML = `
+    <div class="alloc-seg" style="width:${cajitaPct}%; background:#1b4332;" title="Cajita ${cajitaPct}%"></div>
+    <div class="alloc-seg" style="width:${cdtPct}%; background:#b45309;" title="CDT ${cdtPct}%"></div>
+    <div class="alloc-seg" style="width:${fondoPct}%; background:#34C759;" title="Fondo Bursátil ${fondoPct}%"></div>
+  `;
+  document.getElementById('mktAllocLegend').innerHTML = `
+    <span class="alloc-item"><i class="dot" style="background:#1b4332;"></i> <strong>${cajitaPct}%</strong> Cajita (Liquidez)</span>
+    <span class="alloc-item"><i class="dot" style="background:#b45309;"></i> <strong>${cdtPct}%</strong> CDT (Renta Fija)</span>
+    <span class="alloc-item"><i class="dot" style="background:#34C759;"></i> <strong>${fondoPct}%</strong> Fondo Bursátil (Crecimiento)</span>
+  `;
+  document.getElementById('mktDiagnosisText').textContent = evalRes.diagnosis;
+
+  if (!hasMonteCarloInputs()) {
+    document.getElementById('mktModeVal').textContent = '—';
+    document.getElementById('mktMedianSub').textContent = 'Ingresa capital, frecuencia y horizonte';
+    document.getElementById('mktRangeMeta').textContent = 'P10–P90: —';
+    const probEl = document.getElementById('mktBeatProb');
+    probEl.textContent = '—';
+    probEl.className = 'kpi-value';
+    document.getElementById('mktDrawdownMeta').textContent = 'Drawdown est.: —';
+    drawMonteCarloChart(document.getElementById('monteCarloChart'), []);
+    return;
+  }
+
+  const initial = Number(document.getElementById('mktInitial').value) || 0;
+  const contribution = Number(document.getElementById('mktContribution').value) || 0;
+  const frequency = document.getElementById('mktFrequency').value;
+  const horizonYears = Number(document.getElementById('mktHorizonYears').value) || 1;
+
+  const mc = runMonteCarloProjection({
+    initial,
+    contribution,
+    frequency,
+    horizonYears,
+    expectedReturnEA: evalRes.expectedReturnEA,
+    annualVolatility: evalRes.annualVolatility,
+    riskFreeEA: params.riskFree,
+  });
+
   document.getElementById('mktModeVal').textContent = formatMoney(mc.mostProbableFinal);
   document.getElementById('mktMedianSub').textContent = `Mediana P50: ${formatMoney(mc.p50Final)} · Pico: ${mc.modeBandPct.toFixed(0)}% trayectorias`;
   document.getElementById('mktRangeMeta').textContent = `P10: ${formatMoney(mc.p10Final)} · P90: ${formatMoney(mc.p90Final)}`;
@@ -1504,27 +1669,12 @@ function renderPredictor() {
   document.getElementById('mktDrawdownMeta').textContent = `Drawdown máx. mediano: ${mc.medianMaxDrawdown.toFixed(1)}%`;
 
   drawMonteCarloChart(document.getElementById('monteCarloChart'), mc.series, mc.mostProbableFinal);
-
-  // Asignación sugerida
-  const { cajitaPct, cdtPct, fondoPct } = evalRes.allocation;
-  document.getElementById('mktStrategyTag').textContent = evalRes.strategyTag;
-  document.getElementById('mktAllocBar').innerHTML = `
-    <div class="alloc-seg" style="width:${cajitaPct}%; background:#6366f1;" title="Cajita ${cajitaPct}%"></div>
-    <div class="alloc-seg" style="width:${cdtPct}%; background:#f59e0b;" title="CDT ${cdtPct}%"></div>
-    <div class="alloc-seg" style="width:${fondoPct}%; background:#10b981;" title="Fondo Bursátil ${fondoPct}%"></div>
-  `;
-  document.getElementById('mktAllocLegend').innerHTML = `
-    <span class="alloc-item"><i class="dot" style="background:#6366f1;"></i> <strong>${cajitaPct}%</strong> Cajita (Liquidez)</span>
-    <span class="alloc-item"><i class="dot" style="background:#f59e0b;"></i> <strong>${cdtPct}%</strong> CDT (Renta Fija)</span>
-    <span class="alloc-item"><i class="dot" style="background:#10b981;"></i> <strong>${fondoPct}%</strong> Fondo Bursátil (Crecimiento)</span>
-  `;
-  document.getElementById('mktDiagnosisText').textContent = evalRes.diagnosis;
 }
 
 function getSelectedAssetSymbol() {
   const sel = document.getElementById('mktAssetSelect').value;
   if (sel === '__custom__') {
-    return (document.getElementById('mktCustomTicker').value || 'ICOLCAP.CL').trim().toUpperCase();
+    return document.getElementById('mktCustomTicker').value.trim().toUpperCase();
   }
   return sel;
 }
@@ -1543,21 +1693,33 @@ document.getElementById('mktAssetSelect').addEventListener('change', (e) => {
 });
 
 document.getElementById('btnApplyToProjector').addEventListener('click', () => {
-  if (!lastMarketEvaluation) return;
-  const assetLabel = getSelectedAssetLabel().replace(/^[^\w]+/, '').trim();
+  if (!lastMarketEvaluation) {
+    showToast('Primero configura los indicadores o sincroniza un activo');
+    return;
+  }
+  const rawSel = document.getElementById('mktAssetSelect').value;
+  const assetLabel = rawSel
+    ? getSelectedAssetLabel().replace(/^[^\w]+/, '').trim()
+    : 'Fondo Bursátil';
+
+  const rawInit = document.getElementById('mktInitial').value;
+  const rawContrib = document.getElementById('mktContribution').value;
+  const rawFreq = document.getElementById('mktFrequency').value;
+  const rawHor = document.getElementById('mktHorizonYears').value;
+
   writeProjConfig({
     name: `${assetLabel} (${lastMarketEvaluation.regime})`,
     instrument: 'fondo',
-    initial: Number(document.getElementById('mktInitial').value) || 0,
+    initial: rawInit !== '' ? Number(rawInit) : '',
     rate: lastMarketEvaluation.expectedReturnEA,
-    contribution: Number(document.getElementById('mktContribution').value) || 0,
-    frequency: document.getElementById('mktFrequency').value,
-    horizonVal: Number(document.getElementById('mktHorizonYears').value) || 5,
+    contribution: rawContrib !== '' ? Number(rawContrib) : '',
+    frequency: rawFreq || '',
+    horizonVal: rawHor !== '' ? Number(rawHor) : '',
     horizonUnit: 'anios',
-    feeRate: 1.0,
-    fondoTax: 0,
-    inflation: 5,
-    contribGrowth: 0,
+    feeRate: '',
+    fondoTax: '',
+    inflation: '',
+    contribGrowth: '',
   });
   document.querySelector('.tab-btn[data-tab="proyector"]').click();
   showToast(`Escenario "${assetLabel}" (${lastMarketEvaluation.expectedReturnEA}% E.A.) enviado al Proyector`);
@@ -1567,6 +1729,10 @@ document.getElementById('btnSyncBvc').addEventListener('click', async () => {
   const btn = document.getElementById('btnSyncBvc');
   const statusEl = document.getElementById('bvcSyncStatus');
   const symbol = getSelectedAssetSymbol();
+  if (!symbol) {
+    showToast('Selecciona primero una acción, ETF o mercado');
+    return;
+  }
   btn.disabled = true;
   btn.textContent = '⏳ Sincronizando...';
 
