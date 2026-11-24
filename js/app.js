@@ -234,7 +234,9 @@ document.getElementById('btnLoadDemo').addEventListener('click', () => {
   ];
 
   saveState();
+  document.getElementById('filterMonth').value = '';
   renderAccounts();
+  renderRecurring();
   renderTracker();
   showToast('Datos de ejemplo cargados');
 });
@@ -774,6 +776,10 @@ function populateMonthFilter() {
 
   if (prev && [...select.options].some((o) => o.value === prev)) {
     select.value = prev;
+  } else if (state.transactions.some((t) => t.date.startsWith(currentYM))) {
+    select.value = currentYM;
+  } else if (state.transactions.length > 0) {
+    select.value = 'all';
   } else {
     select.value = currentYM;
   }
@@ -901,10 +907,40 @@ function renderTracker() {
   const tbody = document.getElementById('txTableBody');
   const mobileList = document.getElementById('txMobileList');
   const emptyEl = document.getElementById('txEmptyState');
+  const periodVal = document.getElementById('filterMonth').value;
+  const periodBadge = document.getElementById('txPeriodBadge');
+  if (periodBadge) {
+    periodBadge.textContent = periodVal === 'all' ? 'Todo el historial' : periodVal;
+  }
 
   if (filtered.length === 0) {
     tbody.innerHTML = '';
     if (mobileList) mobileList.innerHTML = '';
+    if (state.transactions.length > 0 && periodVal !== 'all') {
+      emptyEl.innerHTML = `
+        <p style="margin:0 0 8px;">No hay movimientos en <strong>${periodVal}</strong> (tienes ${state.transactions.length} en otros meses).</p>
+        <button type="button" id="btnShowAllPeriod" class="btn btn-secondary btn-xs">Ver todo el historial</button>
+      `;
+      document.getElementById('btnShowAllPeriod').addEventListener('click', () => {
+        document.getElementById('filterMonth').value = 'all';
+        renderTracker();
+      });
+    } else if (state.transactions.length > 0) {
+      emptyEl.innerHTML = `
+        <p style="margin:0 0 8px;">Ningún movimiento coincide con los filtros actuales.</p>
+        <button type="button" id="btnClearTxFilters" class="btn btn-secondary btn-xs">Limpiar filtros</button>
+      `;
+      document.getElementById('btnClearTxFilters').addEventListener('click', () => {
+        document.getElementById('filterTxType').value = 'all';
+        document.getElementById('filterTxCategory').value = 'all';
+        document.getElementById('filterTxAccount').value = 'all';
+        document.getElementById('searchTx').value = '';
+        renderAccounts();
+        renderTracker();
+      });
+    } else {
+      emptyEl.textContent = 'Aún no tienes movimientos registrados. Agrega uno nuevo o carga los datos ✨ Demo.';
+    }
     emptyEl.classList.remove('hidden');
     return;
   }
