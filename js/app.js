@@ -190,6 +190,35 @@ document.getElementById('inputImportJson').addEventListener('change', (ev) => {
   ev.target.value = '';
 });
 
+function resetAllData() {
+  const ok = window.confirm(
+    '¿Seguro que quieres borrar todos tus movimientos, cuentas personalizadas, fijos, presupuestos y escenarios guardados? Esta acción no se puede deshacer.'
+  );
+  if (!ok) return;
+
+  state = {
+    currency: state.currency || 'COP',
+    categories: DEFAULT_CATEGORIES.map((c) => ({ ...c })),
+    accounts: DEFAULT_ACCOUNTS.map((a) => ({ ...a })),
+    transactions: [],
+    recurring: [],
+    scenarios: [],
+  };
+
+  document.getElementById('filterMonth').value = '';
+  document.getElementById('filterTxType').value = 'all';
+  document.getElementById('filterTxCategory').value = 'all';
+  document.getElementById('filterTxAccount').value = 'all';
+  document.getElementById('searchTx').value = '';
+
+  resetTxForm();
+  saveState();
+  renderAll();
+  showToast('Todos los datos fueron borrados');
+}
+
+document.getElementById('btnResetAll').addEventListener('click', resetAllData);
+
 document.getElementById('btnLoadDemo').addEventListener('click', () => {
   const now = new Date();
   const ym = (offsetMonths) => {
@@ -1873,6 +1902,11 @@ document.getElementById('btnMobileExport').addEventListener('click', () => {
 document.getElementById('btnMobileImport').addEventListener('click', () => {
   document.getElementById('inputImportJson').click();
   closeMobileMenu();
+});
+
+document.getElementById('btnMobileResetAll').addEventListener('click', () => {
+  closeMobileMenu();
+  resetAllData();
 });
 
 // Expandir / compactar carrusel de categorías en móvil
